@@ -6,10 +6,7 @@ import signal
 import subprocess
 import typing as _t
 
-import _version
-
-__version__ = _version.__version__
-__version_tuple__ = _version.__version_tuple__
+from vhs._version import __version__, __version_tuple__
 
 __all__ = [
     'VhsError',

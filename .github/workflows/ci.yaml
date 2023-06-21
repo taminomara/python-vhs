@@ -9,31 +9,6 @@ on:
     branches:
       - main
 jobs:
-#  tests:
-#    name: Test
-#    runs-on: ubuntu-latest
-#    strategy:
-#      fail-fast: false
-#      matrix:
-#        python-version: ["3.8", "3.9", "3.10"]
-#    steps:
-#      - name: Checkout source
-#        uses: actions/checkout@v3
-#      - name: Set up python ${{ matrix.python-version }}
-#        uses: actions/setup-python@v4
-#        with:
-#          python-version: ${{ matrix.python-version }}
-#      - name: Install package
-#        run: |
-#          python -m pip install --upgrade pip
-#          python -m pip install '.[test]'
-#      - name: Test package
-#        run: pytest --junit-xml=test-results.xml
-#      - name: Generate summary
-#        uses: pmeier/pytest-summary-gha@main
-#        if: always()
-#        with:
-#          path: test-results.xml
   build:
     name: Build Wheels
     runs-on: ${{ matrix.os }}
@@ -43,9 +18,7 @@ jobs:
         os:
           - ubuntu-latest
           - windows-latest
-          - macOS-11
-          - macOS-12
-          - macos-13
+          - macos-latest
     steps:
       - name: Checkout source
         uses: actions/checkout@v3
@@ -70,7 +43,45 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          path: ./dist/*.whl
+          name: dist
+          path: dist/*.whl
+  test:
+    name: Test
+    runs-on: ${{ matrix.os }}
+    needs: [ build ]
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+        python-version:
+          - 3.8
+          - 3.11
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v3
+      - name: Set up python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: dist
+          path: dist/
+      - name: Install aheel
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --no-index --find-links dist/ --verbose vhs
+      - name: Test package
+        run: pytest --junit-xml=test-results.xml
+      - name: Generate summary
+        uses: pmeier/pytest-summary-gha@main
+        if: always()
+        with:
+          path: test-results.xml
 
 #  publish:
 #    name: Publish to PyPi
