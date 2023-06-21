@@ -1,0 +1,45 @@
+[project]
+name = "vhs"
+authors = [{name = "Tamika Nomara", email = "taminomara@gmail.com"}]
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.8"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Intended Audience :: Developers",
+    "Typing :: Typed",
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+test = [
+    "pytest~=7.0",
+]
+doc = [
+    "sphinx>=6.0.0",
+    "sphinx-rtd-theme~=1.2.2",
+]
+
+[project.urls]
+Documentation = "https://python-vhs.readthedocs.io/en/stable/"
+Issues = "https://github.com/taminomara/python-vhs/issues"
+Source = "https://github.com/taminomara/python-vhs/"
+Changelog = "https://github.com/taminomara/python-vhs/blob/main/CHANGELOG.md"
+
+[build-system]
+requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
+
+[tool.setuptools_scm]
+write_to = "vhs/_version.py"
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["vhs", "test"]
