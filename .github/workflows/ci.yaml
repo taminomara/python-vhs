@@ -42,8 +42,10 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-          - macOS-latest
           - windows-latest
+          - macOS-11
+          - macOS-12
+          - macos-13
     steps:
       - name: Checkout source
         uses: actions/checkout@v3
