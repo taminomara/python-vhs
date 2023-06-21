@@ -12,6 +12,7 @@ def copy_bin():
         cmd_path = shutil.which(name)
         if cmd_path is None:
             raise RuntimeError(f'unable to find executable {name}')
+        print(f'copy {cmd_path} to {dest_cmd_path}')
         shutil.copyfile(cmd_path, dest_cmd_path, follow_symlinks=True)
         dest_cmd_path.chmod(dest_cmd_path.stat().st_mode | stat.S_IEXEC)
 
