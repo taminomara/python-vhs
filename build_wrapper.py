@@ -69,7 +69,7 @@ def build():
     import build.__main__
     import wheel.bdist_wheel
 
-    tag = wheel.bdist_wheel.get_platform(pathlib.Path(__file__).parent)
+    tag = wheel.bdist_wheel.get_platform(None)
     build.__main__.main([
         '--wheel', f'-C=--build-option=--plat {tag}',
     ])
