@@ -39,7 +39,7 @@ jobs:
           path: _empty_vhs_tape.tape
       - name: Build wheels
         run: |
-          python build_wrapper.py
+          python build_wrapper.py build
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
