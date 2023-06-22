@@ -71,10 +71,11 @@ jobs:
         with:
           name: dist
           path: dist/
-      - name: Install VHS wheel
+      - name: Install wheel
         run: |
           python -m pip install --upgrade pip
-          python -m pip install --no-index --find-links dist/ --verbose vhs[test]
+          python -m pip install --find-links dist/ --no-index --no-deps vhs
+          python -m pip install --find-links dist/ vhs[test]
       - name: Test package
         run: pytest --junit-xml=test-results.xml
       - name: Generate summary
