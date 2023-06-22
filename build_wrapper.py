@@ -26,6 +26,12 @@ def copy_bin():
         shutil.copyfile(cmd_path, dest_cmd_path, follow_symlinks=True)
         dest_cmd_path.chmod(dest_cmd_path.stat().st_mode | stat.S_IEXEC)
 
+    # if sys.platform == 'darwin':
+    #     pass
+    #
+    # for lib_name in ['libwebsockets']:
+    #     pass
+
 
 def build():
     copy_bin()

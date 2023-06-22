@@ -1,14 +1,15 @@
 """A package that includes VHS binary, and a simple API to run it."""
 
+import logging
 import os
 import pathlib
 import shutil
 import signal
 import subprocess
+import sys
 import tempfile
 import typing as _t
 
-import logging
 logger = logging.getLogger('vhs')
 
 try:
@@ -53,15 +54,6 @@ class VhsError(subprocess.CalledProcessError):
         return msg
 
 
-def _bin_path() -> pathlib.Path:
-    """
-    Return path to the folder with VHS executable and its dependencies.
-
-    """
-
-    return pathlib.Path(__file__).parent / 'bin'
-
-
 def vhs(
     input_path: os.PathLike,
     output_path: _t.Optional[os.PathLike] = None,
@@ -90,10 +82,11 @@ def vhs(
 
     """
 
-    vhs_bin_path = _bin_path()
+    base_path = pathlib.Path(__file__).parent
+    bin_path = base_path / 'bin'
+    lib_path = base_path / 'lib'
 
-
-    # assert (vhs_bin_path / 'vhs').exists(), (
+    # assert (bin_path / 'vhs').exists(), (
     #     'broken python-vhs distribution, please fill an issue '
     #     'at https://github.com/taminomara/python-vhs/issues/new'
     # )
@@ -102,12 +95,15 @@ def vhs(
         env = os.environ
 
     path = env.get('PATH') or os.environ.get('PATH') or ''
-    path = str(vhs_bin_path) + ':' + path if path else str(vhs_bin_path)
+    path = str(bin_path) + ':' + path if path else str(bin_path)
 
-    env = {**env, 'PATH': path}
+    env = {
+        **env,
+        'PATH': str(bin_path) + ':' + (env.get('PATH') or os.environ.get('PATH') or ''),
+        'LD_LIBRARY_PATH': str(lib_path) + ':' + (env.get('LD_LIBRARY_PATH') or os.environ.get('LD_LIBRARY_PATH') or ''),
+        'DYLD_PRINT_LIBRARIES': 'YES',
+    }
 
-    print('>> call', (['ls', '-la', vhs_bin_path]))
-    print(subprocess.call(['ls', '-la', vhs_bin_path]))
     print('>> call', (['vhs', '--version'], env))
     print(subprocess.call(['vhs', '--version'], env=env))
     print('>> call', (['ttyd', '--version'], env))
@@ -115,14 +111,16 @@ def vhs(
     print('>> call', (['ffmpeg', '--version'], env))
     print(subprocess.call(['ffmpeg', '--version'], env=env))
 
-    args = ['vhs']
+    vhs_path = base_path / 'bin' / ('vhs.exe' if sys.platform == 'win32' else '')
+
+    args = [vhs_path]
     capture_output = False
     if quiet:
         args += ['-q']
         capture_output = True
     if output_path:
-        args += ['-o', str(output_path)]
-    args += [str(input_path)]
+        args += ['-o', output_path]
+    args += [input_path]
 
     try:
         logger.debug('running VHS: args=%r path=%r', args, path)

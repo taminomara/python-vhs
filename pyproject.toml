@@ -38,7 +38,7 @@ Changelog = "https://github.com/taminomara/python-vhs/blob/main/CHANGELOG.md"
 requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2", "wheel>=0.40", "build>=0.10"]
 
 [tool.setuptools.package-data]
-vhs = ["bin/*"]
+vhs = ["bin/*", "lib/*"]
 
 [tool.setuptools_scm]
 write_to = "src/vhs/_version.py"
