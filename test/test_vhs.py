@@ -12,7 +12,7 @@ def setup_logging():
 
 
 def test_bin_path_not_empty():
-    bin_path = vhs._bin_path()
+    bin_path = pathlib.Path(vhs.__file__).parent / 'bin'
     files = {f.name for f in bin_path.iterdir()}
     assert files == {'vhs', 'ttyd', 'ffmpeg'}, (
         f'{bin_path} should contain vhs executable and its dependencies. '
