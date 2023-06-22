@@ -119,7 +119,7 @@ def vhs(
         except Exception as e:
             print(e)
 
-    args = [shutil.which('vhs')]
+    args = [bin_path / ('vhs.exe' if sys.platform == 'win32' else 'vhs')]
     capture_output = False
     if quiet:
         args += ['-q']

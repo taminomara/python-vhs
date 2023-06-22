@@ -70,9 +70,7 @@ def build():
     import wheel.bdist_wheel
 
     tag = wheel.bdist_wheel.get_platform(None)
-    build.__main__.main([
-        '--wheel', f'-C=--build-option=--plat {tag}',
-    ])
+    build.__main__.main(['--wheel', f'-C=--build-option=--plat {tag}'])
 
 
 def main():
