@@ -92,12 +92,15 @@ def vhs(
 
     vhs_bin_path = _bin_path()
 
-    assert (vhs_bin_path / 'vhs').exists(), (
-        'broken python-vhs distribution, please fill an issue '
-        'at https://github.com/taminomara/python-vhs/issues/new'
-    )
+    subprocess.call(['ls', '-la', vhs_bin_path])
 
-    env = env or {}
+    # assert (vhs_bin_path / 'vhs').exists(), (
+    #     'broken python-vhs distribution, please fill an issue '
+    #     'at https://github.com/taminomara/python-vhs/issues/new'
+    # )
+
+    if env is None:
+        env = os.environ
 
     path = env.get('PATH') or os.environ.get('PATH') or ''
     path = str(vhs_bin_path) + ':' + path if path else str(vhs_bin_path)
