@@ -92,7 +92,6 @@ def vhs(
 
     vhs_bin_path = _bin_path()
 
-    subprocess.call(['ls', '-la', vhs_bin_path])
 
     # assert (vhs_bin_path / 'vhs').exists(), (
     #     'broken python-vhs distribution, please fill an issue '
@@ -106,6 +105,15 @@ def vhs(
     path = str(vhs_bin_path) + ':' + path if path else str(vhs_bin_path)
 
     env = {**env, 'PATH': path}
+
+    print('>> call', (['ls', '-la', vhs_bin_path]))
+    print(subprocess.call(['ls', '-la', vhs_bin_path]))
+    print('>> call', (['vhs', '--version'], env))
+    print(subprocess.call(['vhs', '--version'], env=env))
+    print('>> call', (['ttyd', '--version'], env))
+    print(subprocess.call(['ttyd', '--version'], env=env))
+    print('>> call', (['ffmpeg', '--version'], env))
+    print(subprocess.call(['ffmpeg', '--version'], env=env))
 
     args = ['vhs']
     capture_output = False
