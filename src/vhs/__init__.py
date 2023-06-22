@@ -102,10 +102,22 @@ def vhs(
         print(subprocess.call(['ttyd', '--version'], env=env))
 
     if sys.platform == 'win32':
-        print(subprocess.call(['vhs', '--version'], env=env))
-        print(subprocess.call(['vhs.exe', '--version'], env=env))
-        print(subprocess.call(['vhs', '--version'], env=env, shell=True))
-        print(subprocess.call(['vhs.exe', '--version'], env=env, shell=True))
+        try:
+            print(subprocess.call(['vhs', '--version'], env=env))
+        except Exception as e:
+            print(e)
+        try:
+            print(subprocess.call(['vhs.exe', '--version'], env=env))
+        except Exception as e:
+            print(e)
+        try:
+            print(subprocess.call(['vhs', '--version'], env=env, shell=True))
+        except Exception as e:
+            print(e)
+        try:
+            print(subprocess.call(['vhs.exe', '--version'], env=env, shell=True))
+        except Exception as e:
+            print(e)
 
     args = [shutil.which('vhs')]
     capture_output = False

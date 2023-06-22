@@ -54,6 +54,14 @@ def copy_bin():
                 print(f'copy {src_path} to {dst_path}')
                 shutil.copyfile(src_path, dst_path, follow_symlinks=True)
 
+                name_components = dst_path.name.split('.')
+                for i in [1, 2]:
+                    name = '.'.join(name_components[:i]) + '.' + name_components[-1]
+                    link_path = dst_path.parent / name
+                    if not link_path.exists():
+                        print(f'symlink {dst_path.parent / name} -> {dst_path}')
+                        os.symlink(dst_path, dst_path.parent / name)
+
 
 def build():
     copy_bin()
