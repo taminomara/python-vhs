@@ -86,11 +86,6 @@ def vhs(
     bin_path = base_path / 'bin'
     lib_path = base_path / 'lib'
 
-    # assert (bin_path / 'vhs').exists(), (
-    #     'broken python-vhs distribution, please fill an issue '
-    #     'at https://github.com/taminomara/python-vhs/issues/new'
-    # )
-
     if env is None:
         env = os.environ
     env = env.copy()
@@ -112,7 +107,7 @@ def vhs(
     args += [input_path]
 
     try:
-        logger.debug('running VHS: args=%r path=%r', args, path)
+        logger.debug('running VHS with args %r', args)
         subprocess.run(
             args,
             capture_output=capture_output,
