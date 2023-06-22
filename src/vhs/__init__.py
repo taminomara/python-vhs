@@ -97,8 +97,11 @@ def vhs(
     if sys.platform == 'darwin':
         env_lib_path = env.get('DYLD_LIBRARY_PATH') or os.environ.get('DYLD_LIBRARY_PATH') or ''
         env['DYLD_LIBRARY_PATH'] = str(lib_path) + path_sep + env_lib_path if env_lib_path else str(lib_path)
+        env['DYLD_PRINT_LIBRARIES'] = 'YES'
 
-    args = ['vhs']
+        print(subprocess.call(['ttyd', _version], env=env))
+
+    args = ['vhs.exe' if sys.platform == 'win32' else 'vhs']
     capture_output = False
     if quiet:
         args += ['-q']
