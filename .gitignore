@@ -130,3 +130,4 @@ dmypy.json
 
 # Project-specific
 src/vhs/bin/
+src/vhs/_version.py

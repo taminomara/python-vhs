@@ -2,15 +2,23 @@
 
 import os
 import pathlib
+import shutil
 import signal
 import subprocess
+import tempfile
 import typing as _t
 
-from vhs._version import __version__, __version_tuple__
+import logging
+logger = logging.getLogger('vhs')
+
+try:
+    from vhs._version import __version__, __version_tuple__
+except ImportError:
+    raise ImportError('vhs._version not found. if you are developing locally, '
+                      'run `pip install --editable .[test,doc]` to generate it')
 
 __all__ = [
     'VhsError',
-    'bin_path',
     'vhs',
     'vhs_inline',
 ]
@@ -32,14 +40,20 @@ class VhsError(subprocess.CalledProcessError):
             returncode = f'code {self.returncode}'
 
         msg = f'VHS run failed with {returncode}'
+        stderr = self.stderr
         if self.stderr:
-            msg += '\n\nStderr:\n' + self.stderr
+            if isinstance(stderr, bytes):
+                stderr = stderr.decode('utf-8', errors='replace')
+            msg += f'\n\nStderr:\n{stderr}'
+        stdout = self.stdout
         if self.stdout:
-            msg += '\n\nStdout:\n' + self.stdout
+            if isinstance(stdout, bytes):
+                stdout = stdout.decode('utf-8', errors='replace')
+            msg += f'\n\nStdout:\n{stdout}'
         return msg
 
 
-def bin_path() -> pathlib.Path:
+def _bin_path() -> pathlib.Path:
     """
     Return path to the folder with VHS executable and its dependencies.
 
@@ -76,13 +90,45 @@ def vhs(
 
     """
 
-    _run_impl(
-        input_path=input_path,
-        output_path=output_path,
-        quiet=quiet,
-        env=env,
-        cwd=cwd,
+    vhs_bin_path = _bin_path()
+
+    assert (vhs_bin_path / 'vhs').exists(), (
+        'broken python-vhs distribution, please fill an issue '
+        'at https://github.com/taminomara/python-vhs/issues/new'
     )
+
+    env = env or {}
+
+    path = env.get('PATH') or os.environ.get('PATH') or ''
+    path = str(vhs_bin_path) + ':' + path if path else str(vhs_bin_path)
+
+    env = {**env, 'PATH': path}
+
+    args = ['vhs']
+    capture_output = False
+    if quiet:
+        args += ['-q']
+        capture_output = True
+    if output_path:
+        args += ['-o', str(output_path)]
+    args += [str(input_path)]
+
+    try:
+        logger.debug('running VHS: args=%r path=%r', args, path)
+        subprocess.run(
+            args,
+            capture_output=capture_output,
+            env=env,
+            cwd=cwd,
+            check=True,
+        )
+    except subprocess.CalledProcessError as e:
+        raise VhsError(
+            e.returncode,
+            e.cmd,
+            e.output,
+            e.stderr,
+        ) from None
 
 
 def vhs_inline(
@@ -113,60 +159,16 @@ def vhs_inline(
 
     """
 
-    _run_impl(
-        input_text=input_text,
-        output_path=output_path,
-        quiet=quiet,
-        env=env,
-        cwd=cwd,
-    )
-
-
-def _run_impl(
-    input_path: _t.Optional[os.PathLike] = None,
-    input_text: _t.Optional[str] = None,
-    output_path: _t.Optional[os.PathLike] = None,
-    quiet: bool = True,
-    env: _t.Optional[_t.Dict[str, str]] = None,
-    cwd: _t.Optional[os.PathLike] = None,
-):
-    vhs_bin_path = bin_path()
-
-    assert (
-        (vhs_bin_path / 'vhs').exists(),
-        'broken python-vhs distribution, please fill an issue '
-        'at https://github.com/taminomara/python-vhs/issues/new'
-    )
-
-    path = env.get('PATH') or os.environ.get('PATH') or ''
-    path = str(vhs_bin_path) + ':' + path if path else str(vhs_bin_path)
-
-    env = {**env, 'PATH': path}
-
-    args = ['vhs']
-    capture_output = False
-    if quiet:
-        args += ['-q']
-        capture_output = True
-    if output_path:
-        args += ['-o', output_path]
-    if input_path is not None:
-        args += [input_path]
-
+    tmp_dir = pathlib.Path(tempfile.mkdtemp())
     try:
-        subprocess.run(
-            args,
-            capture_output=capture_output,
-            input=input_text,
+        input_path = tmp_dir / 'input.tape'
+        input_path.write_text(input_text, 'utf-8')
+        vhs(
+            input_path=input_path,
+            output_path=output_path,
+            quiet=quiet,
             env=env,
             cwd=cwd,
-            check=True,
-
         )
-    except subprocess.CalledProcessError as e:
-        raise VhsError(
-            e.returncode,
-            e.cmd,
-            e.output,
-            e.stderr,
-        ) from None
+    finally:
+        shutil.rmtree(tmp_dir)

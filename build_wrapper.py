@@ -1,9 +1,12 @@
+#! /usr/bin/env python3
+
+import argparse
 import pathlib
 import shutil
 import stat
 import sys
 
-BIN_PATH = pathlib.Path(__file__).parent / 'vhs' / 'bin'
+BIN_PATH = pathlib.Path(__file__).parent / 'src' / 'vhs' / 'bin'
 
 
 def copy_bin():
@@ -11,7 +14,10 @@ def copy_bin():
     for name in ['vhs', 'ttyd', 'ffmpeg']:
         cmd_path = shutil.which(name)
         if cmd_path is None:
-            raise RuntimeError(f'unable to find executable {name}')
+            raise RuntimeError(
+                f'unable to find executable {name}. make sure VHS '
+                f'is installed and available through your PATH'
+            )
         dest_name = name
         if sys.platform == 'win32':
             dest_name += '.exe'
@@ -21,7 +27,9 @@ def copy_bin():
         dest_cmd_path.chmod(dest_cmd_path.stat().st_mode | stat.S_IEXEC)
 
 
-def build_wheel():
+def build():
+    copy_bin()
+
     import build.__main__
     import wheel.bdist_wheel
 
@@ -31,6 +39,14 @@ def build_wheel():
     ])
 
 
+def main():
+    parser = argparse.ArgumentParser(description='VHS building helper')
+    commands = parser.add_subparsers(title='command', dest='command', required=True)
+    commands.add_parser('build').set_defaults(func=build)
+    commands.add_parser('copy_bin').set_defaults(func=copy_bin)
+
+    parser.parse_args().func()
+
+
 if __name__ == '__main__':
-    copy_bin()
-    build_wheel()
+    main()
