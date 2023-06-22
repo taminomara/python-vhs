@@ -41,8 +41,8 @@ requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
 vhs = ["bin/*"]
 
 [tool.setuptools_scm]
-write_to = "vhs/_version.py"
+write_to = "src/vhs/_version.py"
 
 [tool.pytest.ini_options]
 minversion = "7.0"
-testpaths = ["vhs", "test"]
+testpaths = ["src", "test"]
