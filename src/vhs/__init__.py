@@ -111,7 +111,7 @@ def vhs(
     print('>> call', (['ffmpeg', '--version'], env))
     print(subprocess.call(['ffmpeg', '--version'], env=env))
 
-    vhs_path = base_path / 'bin' / ('vhs.exe' if sys.platform == 'win32' else '')
+    vhs_path = base_path / 'bin' / ('vhs.exe' if sys.platform == 'win32' else 'vhs')
 
     args = [vhs_path]
     capture_output = False
