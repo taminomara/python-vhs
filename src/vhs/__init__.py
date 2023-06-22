@@ -104,13 +104,6 @@ def vhs(
         'DYLD_PRINT_LIBRARIES': 'YES',
     }
 
-    print('>> call', (['vhs', '--version'], env))
-    print(subprocess.call(['vhs', '--version'], env=env))
-    print('>> call', (['ttyd', '--version'], env))
-    print(subprocess.call(['ttyd', '--version'], env=env))
-    print('>> call', (['ffmpeg', '--version'], env))
-    print(subprocess.call(['ffmpeg', '--version'], env=env))
-
     vhs_path = base_path / 'bin' / ('vhs.exe' if sys.platform == 'win32' else 'vhs')
 
     args = [vhs_path]

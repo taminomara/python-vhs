@@ -7,35 +7,40 @@ import shutil
 import stat
 import sys
 
+
 BIN_PATH = pathlib.Path(__file__).parent / 'src' / 'vhs' / 'bin'
+LIB_PATH = pathlib.Path(__file__).parent / 'src' / 'vhs' / 'lib'
 
 
 def copy_bin():
     BIN_PATH.mkdir(exist_ok=True)
+    LIB_PATH.mkdir(exist_ok=True)
+
     for name in ['vhs', 'ttyd', 'ffmpeg']:
-        cmd_path = shutil.which(name)
-        if cmd_path is None:
+        src_path = shutil.which(name)
+        if src_path is None:
             raise RuntimeError(
                 f'unable to find executable {name}. make sure VHS '
                 f'is installed and available through your PATH'
             )
-        dest_name = name
-        if sys.platform == 'win32':
-            dest_name += '.exe'
-        dest_cmd_path = BIN_PATH / dest_name
-        print(f'copy {cmd_path} to {dest_cmd_path}')
-        shutil.copyfile(cmd_path, dest_cmd_path, follow_symlinks=True)
-        dest_cmd_path.chmod(dest_cmd_path.stat().st_mode | stat.S_IEXEC)
+
+        dst_path = BIN_PATH / (name + '.exe' if sys.platform == 'win32' else name)
+        print(f'copy {src_path} to {dst_path}')
+        shutil.copyfile(src_path, dst_path, follow_symlinks=True)
+        dst_path.chmod(dst_path.stat().st_mode | stat.S_IEXEC)
 
     if sys.platform == 'darwin':
-        import subprocess
-        print(subprocess.call(['ttyd', '--version'], env={
-            **os.environ,
-            'DYLD_PRINT_LIBRARIES': 'YES',
-        }))
-    #
-    # for lib_name in ['libwebsockets']:
-    #     pass
+        for lib in [
+            'libwebsockets.dylib',
+            'libjson-c.dylib',
+            'libuv.dylib',
+            'libssl.dylib',
+            'libcrypto.dylib',
+        ]:
+            src_path = pathlib.Path('/usr/local/lib') / lib
+            dst_path = LIB_PATH / name
+            print(f'copy {src_path} to {dst_path}')
+            shutil.copyfile(src_path, dst_path, follow_symlinks=True)
 
 
 def build():
