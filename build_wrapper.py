@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
 
 import argparse
+import os
 import pathlib
 import shutil
 import stat
@@ -26,8 +27,12 @@ def copy_bin():
         shutil.copyfile(cmd_path, dest_cmd_path, follow_symlinks=True)
         dest_cmd_path.chmod(dest_cmd_path.stat().st_mode | stat.S_IEXEC)
 
-    # if sys.platform == 'darwin':
-    #     pass
+    if sys.platform == 'darwin':
+        import subprocess
+        print(subprocess.call(['ttyd', '--version'], env={
+            **os.environ,
+            'DYLD_PRINT_LIBRARIES': 'YES',
+        }))
     #
     # for lib_name in ['libwebsockets']:
     #     pass
