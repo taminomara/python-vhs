@@ -107,7 +107,7 @@ def vhs(
         print(subprocess.call(['vhs', '--version'], env=env, shell=True))
         print(subprocess.call(['vhs.exe', '--version'], env=env, shell=True))
 
-    args = ['vhs.exe' if sys.platform == 'win32' else 'vhs']
+    args = [shutil.which('vhs')]
     capture_output = False
     if quiet:
         args += ['-q']
