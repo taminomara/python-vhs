@@ -99,7 +99,7 @@ def vhs(
         env['DYLD_LIBRARY_PATH'] = str(lib_path) + path_sep + env_lib_path if env_lib_path else str(lib_path)
         env['DYLD_PRINT_LIBRARIES'] = 'YES'
 
-        print(subprocess.call(['ttyd', _version], env=env))
+        print(subprocess.call(['ttyd', '--version'], env=env))
 
     args = ['vhs.exe' if sys.platform == 'win32' else 'vhs']
     capture_output = False
