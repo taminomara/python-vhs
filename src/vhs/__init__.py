@@ -93,20 +93,16 @@ def vhs(
 
     if env is None:
         env = os.environ
+    env = env.copy()
 
-    path = env.get('PATH') or os.environ.get('PATH') or ''
-    path = str(bin_path) + ':' + path if path else str(bin_path)
+    env_bin_path = env.get('PATH') or os.environ.get('PATH') or ''
+    env['PATH'] = str(bin_path) + ':' + env_bin_path if env_bin_path else str(bin_path)
 
-    env = {
-        **env,
-        'PATH': str(bin_path) + ':' + (env.get('PATH') or os.environ.get('PATH') or ''),
-        'LD_LIBRARY_PATH': str(lib_path) + ':' + (env.get('LD_LIBRARY_PATH') or os.environ.get('LD_LIBRARY_PATH') or ''),
-        'DYLD_PRINT_LIBRARIES': 'YES',
-    }
+    if sys.platform == 'darwin':
+        env_lib_path = env.get('DYLD_LIBRARY_PATH') or os.environ.get('DYLD_LIBRARY_PATH') or ''
+        env['DYLD_LIBRARY_PATH'] = str(lib_path) + ':' + env_lib_path if env_lib_path else str(lib_path)
 
-    vhs_path = base_path / 'bin' / ('vhs.exe' if sys.platform == 'win32' else 'vhs')
-
-    args = [vhs_path]
+    args = ['vhs']
     capture_output = False
     if quiet:
         args += ['-q']
@@ -123,6 +119,7 @@ def vhs(
             env=env,
             cwd=cwd,
             check=True,
+            shell=True,
         )
     except subprocess.CalledProcessError as e:
         raise VhsError(

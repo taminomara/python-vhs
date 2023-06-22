@@ -2,6 +2,8 @@
 
 import argparse
 import os
+import re
+import subprocess
 import pathlib
 import shutil
 import stat
@@ -25,22 +27,32 @@ def copy_bin():
             )
 
         dst_path = BIN_PATH / (name + '.exe' if sys.platform == 'win32' else name)
+
         print(f'copy {src_path} to {dst_path}')
         shutil.copyfile(src_path, dst_path, follow_symlinks=True)
+
         dst_path.chmod(dst_path.stat().st_mode | stat.S_IEXEC)
 
     if sys.platform == 'darwin':
-        for lib in [
-            'libwebsockets.dylib',
-            'libjson-c.dylib',
-            'libuv.dylib',
-            'libssl.dylib',
-            'libcrypto.dylib',
-        ]:
-            src_path = pathlib.Path('/usr/local/lib') / lib
-            dst_path = LIB_PATH / name
-            print(f'copy {src_path} to {dst_path}')
-            shutil.copyfile(src_path, dst_path, follow_symlinks=True)
+        ttyd_run = subprocess.run(
+            ['ttyd', '--version'],
+            env={**os.environ, 'DYLD_PRINT_LIBRARIES': 'YES'},
+            check=True,
+            stderr=subprocess.PIPE,
+            stdout=subprocess.DEVNULL,
+        )
+
+        for line in ttyd_run.stderr.splitlines():
+            if match := re.match(rb'^.*?(/usr/local/Cellar/.+)$', line):
+                src_path = pathlib.Path(match.group(1).decode())
+
+                if src_path.name == 'ttyd':
+                    continue
+
+                dst_path = LIB_PATH / src_path.name
+
+                print(f'copy {src_path} to {dst_path}')
+                shutil.copyfile(src_path, dst_path, follow_symlinks=True)
 
 
 def build():
