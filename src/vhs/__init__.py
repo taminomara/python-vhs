@@ -101,6 +101,12 @@ def vhs(
 
         print(subprocess.call(['ttyd', '--version'], env=env))
 
+    if sys.platform == 'win32':
+        print(subprocess.call(['vhs', '--version'], env=env))
+        print(subprocess.call(['vhs.exe', '--version'], env=env))
+        print(subprocess.call(['vhs', '--version'], env=env, shell=True))
+        print(subprocess.call(['vhs.exe', '--version'], env=env, shell=True))
+
     args = ['vhs.exe' if sys.platform == 'win32' else 'vhs']
     capture_output = False
     if quiet:
