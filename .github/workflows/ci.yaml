@@ -21,8 +21,7 @@ jobs:
           - macos-latest
         python-version:
           - "3.8"
-          - "3.9"
-          - "3.10"
+          - "3.11"
     steps:
       - name: Checkout source
         uses: actions/checkout@v3
@@ -36,6 +35,12 @@ jobs:
           python -m pip install '.[test]'
       - name: Check codestyle
         run: black .
+      - run: |
+          echo 'Type "true"' > _empty_vhs_tape.tape
+      - name: Install VHS
+        uses: charmbracelet/vhs-action@v1
+        with:
+          path: _empty_vhs_tape.tape
       - name: Test package
         run: pytest --junit-xml=test-results.xml
       - name: Generate summary

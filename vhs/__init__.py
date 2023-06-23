@@ -18,7 +18,7 @@ import github
 _logger = logging.getLogger("vhs")
 
 try:
-    from __init__._version import __version__, __version_tuple__
+    from vhs._version import __version__, __version_tuple__
 except ImportError:
     raise ImportError(
         "vhs._version not found. if you are developing locally, "
@@ -72,6 +72,7 @@ class VhsRunError(VhsError, subprocess.CalledProcessError):
         return msg
 
 
+@_t.final
 class Vhs:
     """
     Interface for a VHS installation.
@@ -86,72 +87,13 @@ class Vhs:
         _path: str,
         _quiet: bool = True,
         _env: _t.Optional[_t.Dict[str, str]] = None,
-        _cwd: _t.Optional[os.PathLike] = None,
+        _cwd: _t.Optional[_PathLike] = None,
     ):
         self._vhs_path = _vhs_path
         self._path = _path
         self._quiet = _quiet
         self._env = _env
         self._cwd = _cwd
-
-    @classmethod
-    def resolve(
-        cls,
-        *,
-        cache_path: _t.Optional[pathlib.Path] = None,
-        min_version: str = "0.5.0",
-        quiet: bool = True,
-        env: _t.Optional[_t.Dict[str, str]] = None,
-        cwd: _t.Optional[os.PathLike] = None,
-        install: bool = True,
-        reporter: _t.Optional[_t.Callable[[str, int, int], None]] = None,
-    ) -> "Vhs":
-        """
-        Find a system VHS installation or download VHS from GitHub.
-
-        If VHS is not installed, or it's outdated, try to download it
-        and install it into `cache_path`.
-
-        Automatic download only works on 64-bit Linux and Windows.
-        MacOS users will be presented with an instruction to use `brew`,
-        and other systems users will get a link to VHS installation guide.
-
-        :param cache_path:
-            path where VHS binaries should be downloaded to.
-        :param min_version:
-            minimal VHS version required.
-        :param quiet:
-            if true (default), any output from the VHS binary is hidden.
-        :param env:
-            overrides environment variables for the VHS process.
-        :param cwd:
-            overrides current working directory for the VHS process.
-        :param install:
-            if false, disables installing VHS from GitHub.
-        :param reporter:
-            a hook that will be called to inform user about installation
-            progress. See :func:`default_stderr_reporter` for details.
-        :return:
-            resolved VHS installation.
-        :raises VhsError:
-            VHS not available or installation failed.
-
-        """
-
-        if cache_path is None:
-            cache_path = pathlib.Path(tempfile.gettempdir()) / "python_vhs_cache"
-
-        vhs_path, path = _check_and_install(
-            min_version, cache_path, _get_path(env), install, reporter
-        )
-
-        return cls(
-            _vhs_path=vhs_path,
-            _path=path,
-            _quiet=quiet,
-            _env=env,
-            _cwd=cwd,
-        )
 
     def run(
         self,
@@ -160,7 +102,7 @@ class Vhs:
         *,
         quiet: _t.Optional[bool] = True,
         env: _t.Optional[_t.Dict[str, str]] = None,
-        cwd: _t.Optional[os.PathLike] = None,
+        cwd: _t.Optional[_PathLike] = None,
     ):
         """
         Renter the given VHS file.
@@ -187,14 +129,15 @@ class Vhs:
         if env is None:
             env = self._env
         if env is None:
-            env = os.environ
-        env = env.copy()
+            env = os.environ.copy()
+        else:
+            env = env.copy()
         env["PATH"] = self._path
 
         if cwd is None:
             cwd = self._cwd
 
-        args = [self._vhs_path]
+        args: _t.List[_t.Union[str, _PathLike]] = [self._vhs_path]
         capture_output = False
         if quiet:
             args += ["-q"]
@@ -213,7 +156,7 @@ class Vhs:
                 check=True,
             )
         except subprocess.CalledProcessError as e:
-            raise VhsError(
+            raise VhsRunError(
                 e.returncode,
                 e.cmd,
                 e.output,
@@ -227,7 +170,7 @@ class Vhs:
         *,
         quiet: _t.Optional[bool] = True,
         env: _t.Optional[_t.Dict[str, str]] = None,
-        cwd: _t.Optional[os.PathLike] = None,
+        cwd: _t.Optional[_PathLike] = None,
     ):
         """
         Like :meth:`~Vhs.run`, but accepts tape contents rather than a file.
@@ -250,6 +193,7 @@ class Vhs:
 
         with tempfile.NamedTemporaryFile("w", suffix=".tape") as tmp_file:
             tmp_file.write(input_text)
+            tmp_file.flush()
             self.run(
                 input_path=tmp_file.name,
                 output_path=output_path,
@@ -257,6 +201,66 @@ class Vhs:
                 env=env,
                 cwd=cwd,
             )
+
+
+def resolve(
+    *,
+    cache_path: _t.Optional[pathlib.Path] = None,
+    min_version: str = "0.5.0",
+    quiet: bool = True,
+    env: _t.Optional[_t.Dict[str, str]] = None,
+    cwd: _t.Optional[_PathLike] = None,
+    install: bool = True,
+    reporter: _t.Optional[_t.Callable[[str, int, int], None]] = None,
+) -> "Vhs":
+    """
+    Find a system VHS installation or download VHS from GitHub.
+
+    If VHS is not installed, or it's outdated, try to download it
+    and install it into `cache_path`.
+
+    Automatic download only works on 64-bit Linux and Windows.
+    MacOS users will be presented with an instruction to use `brew`,
+    and other systems users will get a link to VHS installation guide.
+
+    :param cache_path:
+        path where VHS binaries should be downloaded to.
+    :param min_version:
+        minimal VHS version required.
+    :param quiet:
+        if true (default), any output from the VHS binary is hidden.
+    :param env:
+        overrides environment variables for the VHS process.
+    :param cwd:
+        overrides current working directory for the VHS process.
+    :param install:
+        if false, disables installing VHS from GitHub.
+    :param reporter:
+        a hook that will be called to inform user about installation
+        progress. See :func:`default_stderr_reporter` for details.
+    :return:
+        resolved VHS installation.
+    :raises VhsError:
+        VHS not available or installation failed.
+
+    """
+
+    if cache_path is None:
+        cache_path = pathlib.Path(tempfile.gettempdir()) / "python_vhs_cache"
+    else:
+        cache_path = pathlib.Path(cache_path)
+
+    vhs_path, path = _check_and_install(
+        min_version, cache_path, _get_path(env), install, reporter
+    )
+
+    return Vhs(
+        _vhs_path=vhs_path,
+        _path=path,
+        _quiet=quiet,
+        _env=env,
+        _cwd=cwd,
+    )
 
 
 def default_stderr_reporter(desc: str, dl_size: int, total_size: int):
@@ -276,7 +280,11 @@ def _get_path(env: _t.Optional[_t.Dict[str, str]]) -> str:
         try:
             path = os.confstr("CS_PATH")
         except (AttributeError, ValueError):
-            path = os.defpath
+            pass
+    if path is None:
+        path = os.defpath
+    if path is None:
+        path = ''
     return path
 
 
@@ -289,12 +297,12 @@ def _get_name(name: str):
 
 def _download_latest_release(
     name: str,
-    repo: str,
+    repo_name: str,
     dest: pathlib.Path,
     filter: _t.Callable[[str], bool],
     reporter: _t.Optional[_t.Callable[[str, int, int], None]],
 ):
-    repo = github.Github().get_repo(repo)
+    repo = github.Github().get_repo(repo_name)
 
     for release in repo.get_releases():
         if release.draft or release.prerelease:
@@ -411,8 +419,8 @@ def _check_version(
 ) -> _t.Tuple[bool, _t.Optional[str]]:
     version_tuple = tuple(int(c) for c in version.split("."))
     try:
-        system_version_text = subprocess.check_output([vhs_path, "--version"])
-        system_version_text = system_version_text.decode().strip()
+        system_version_text_b = subprocess.check_output([vhs_path, "--version"])
+        system_version_text = system_version_text_b.decode().strip()
         if match := re.match(r"^vhs version (\d+\.\d+\.\d+)$", system_version_text):
             system_version = match.group(1)
             system_version_tuple = tuple(int(c) for c in system_version.split("."))
@@ -426,7 +434,7 @@ def _check_version(
                     version,
                 )
                 return False, system_version
-    except (subprocess.SubprocessError, UnicodeDecodeError):
+    except (subprocess.SubprocessError, OSError, UnicodeDecodeError):
         pass
 
     _logger.debug("%s failed to print its version", vhs_path)
@@ -444,7 +452,7 @@ def _check_and_install(
         version = version[1:]
 
     # Try finding pre-installed vhs.
-    system_vhs_path = shutil.which("", path=path)
+    system_vhs_path = shutil.which("vhs", path=path)
     system_version = None
     if system_vhs_path:
         can_use_system_vhs, system_version = _check_version(version, system_vhs_path)
@@ -517,7 +525,8 @@ def _check_and_install(
 
     _install_vhs(bin_path, reporter)
 
-    if not _check_version(version, vhs_path):
+    can_use_cached_vhs, _ = _check_version(version, vhs_path)
+    if not can_use_cached_vhs:
         _logger.warning(
             "downloaded latest vhs is outdated; "
             "are you sure min_vhs_version is correct?"

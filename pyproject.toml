@@ -49,4 +49,5 @@ write_to = "vhs/_version.py"
 [tool.pytest.ini_options]
 minversion = "7.0"
 testpaths = ["vhs", "test"]
-addopts = ["--mypy"]
+addopts = ["--mypy", "--strict-markers"]
+markers = ["darwin", "linux", "win32"]

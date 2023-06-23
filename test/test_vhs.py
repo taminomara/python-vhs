@@ -1,26 +1,116 @@
-# import logging
-# import pathlib
-#
-# import vhs
-#
-# import pytest
-#
-#
-# @pytest.fixture(scope='session', autouse=True)
-# def setup_logging():
-#     vhs.logger.setLevel(logging.DEBUG)
-#
-#
-# def test_bin_path_not_empty():
-#     bin_path = pathlib.Path(vhs.__file__).parent / 'bin'
-#     files = {f.name for f in bin_path.iterdir()}
-#     assert files == {'vhs', 'ttyd', 'ffmpeg'}, (
-#         f'{bin_path} should contain vhs executable and its dependencies. '
-#         f'if you\'re developing locally, you need to install VHS on your system, '
-#         f'then run `./build_wrapper.py copy_bin`'
-#     )
-#
-#
+import logging
+import os
+import pathlib
+import shutil
+
+import vhs
+
+import pytest
+
+
+@pytest.fixture(scope='session', autouse=True)
+def setup_logging():
+    vhs._logger.setLevel(logging.DEBUG)
+
+
+def test_system_vhs(tmpdir):
+    system_vhs = shutil.which('vhs')
+    system_ttyd = shutil.which('ttyd')
+    system_ffmpeg = shutil.which('ffmpeg')
+    assert system_vhs is not None, 'vhs should be installed on your system to run tests'
+
+    detected_vhs = vhs.resolve(cache_path=tmpdir)
+    assert detected_vhs._vhs_path == pathlib.Path(system_vhs)
+
+    res = _do_vhs_test(detected_vhs, tmpdir)
+
+    assert system_vhs in res
+    assert system_ttyd in res
+    assert system_ffmpeg in res
+
+
+@pytest.mark.linux
+def test_system_vhs_unavailable(tmpdir):
+    detected_vhs = vhs.resolve(cache_path=tmpdir, env={'PATH': os.defpath})
+    assert detected_vhs._vhs_path == pathlib.Path(tmpdir) / 'vhs'
+    assert detected_vhs._path.startswith(str(tmpdir))
+
+    res = _do_vhs_test(detected_vhs, tmpdir)
+
+    assert str(tmpdir / 'vhs') in res
+    assert str(tmpdir / 'ttyd') in res
+    assert str(tmpdir / 'ffmpeg') in res
+
+
+@pytest.mark.win32
+def test_system_vhs_unavailable_win32(tmpdir):
+    detected_vhs = vhs.resolve(cache_path=tmpdir, env={'PATH': os.defpath})
+    assert detected_vhs._vhs_path == pathlib.Path(tmpdir) / 'vhs.exe'
+    assert detected_vhs._path.startswith(str(tmpdir))
+
+    res = _do_vhs_test(detected_vhs, tmpdir)
+
+    assert str(tmpdir / 'vhs.exe') in res
+    assert str(tmpdir / 'ttyd.exe') in res
+    assert str(tmpdir / 'ffmpeg.exe') in res
+
+
+@pytest.mark.darwin
+def test_system_vhs_unavailable_darwin(tmpdir):
+    with pytest.raises(vhs.VhsError, match=r'VHS is not installed on your system'):
+        vhs.resolve(cache_path=tmpdir, env={'PATH': os.defpath})
+
+
+@pytest.mark.linux
+def test_system_vhs_outdated(tmpdir):
+    detected_vhs = vhs.resolve(cache_path=tmpdir, min_version='9999.0.0')
+    assert detected_vhs._vhs_path == pathlib.Path(tmpdir) / 'vhs'
+    assert detected_vhs._path.startswith(str(tmpdir))
+
+    res = _do_vhs_test(detected_vhs, tmpdir)
+
+    assert str(tmpdir / 'vhs') in res
+    assert str(tmpdir / 'ttyd') in res
+    assert str(tmpdir / 'ffmpeg') in res
+
+
+@pytest.mark.win32
+def test_system_vhs_outdated_win32(tmpdir):
+    detected_vhs = vhs.resolve(cache_path=tmpdir, min_version='9999.0.0')
+    assert detected_vhs._vhs_path == pathlib.Path(tmpdir) / 'vhs.exe'
+    assert detected_vhs._path.startswith(str(tmpdir))
+
+    res = _do_vhs_test(detected_vhs, tmpdir)
+
+    assert str(tmpdir / 'vhs.exe') in res
+    assert str(tmpdir / 'ttyd.exe') in res
+    assert str(tmpdir / 'ffmpeg.exe') in res
+
+
+@pytest.mark.darwin
+def test_system_vhs_outdated_darwin(tmpdir):
+    with pytest.raises(vhs.VhsError, match=r'but version 9999.0.0 or newer is required'):
+        vhs.resolve(cache_path=tmpdir, min_version='9999.0.0')
+
+
+def _do_vhs_test(detected_vhs: vhs.Vhs, tmpdir):
+    detected_vhs.run_inline(
+        f"""
+        Output "{tmpdir / 'out.txt'}"
+        Type "which vhs; which ttyd; which ffmpeg"
+        Enter
+        """,
+        tmpdir / 'out.gif'
+    )
+
+    with open(tmpdir / 'out.txt') as f:
+        return f.read()
+
+
+def test_reporter():
+    pass
+
+
 # def test_vhs_inline(tmpdir):
 #     tmpdir = pathlib.Path(tmpdir)
 #     output = tmpdir / 'output.txt'
