@@ -1,4 +1,4 @@
-# Python bindings for VHS
+# Python VHS
 
 [VHS] is a tool by [charm] that renders terminal commands into GIFs.
 This is a python package that includes VHS binary with all its dependencies,

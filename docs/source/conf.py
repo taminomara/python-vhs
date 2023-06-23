@@ -1,18 +1,19 @@
+import vhs
+
 # -- Project information -----------------------------------------------------
 
-project = 'Sphinx VHS'
+project = 'Python VHS'
 copyright = '2023, Tamika Nomara'
 author = 'Tamika Nomara'
-
+release = version = vhs.__version__
 
 # -- General configuration ---------------------------------------------------
 
 extensions = [
     'sphinx.ext.githubpages',
-    'sphinxcontrib.jquery',
     'sphinx_vhs',
 ]
 
 # -- Options for HTML output -------------------------------------------------
 
-html_theme = 'sphinx_rtd_theme'
+html_theme = 'sphinxawesome_theme'

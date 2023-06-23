@@ -129,5 +129,4 @@ dmypy.json
 .pyre/
 
 # Project-specific
-src/vhs/bin/
-src/vhs/_version.py
+_version.py
