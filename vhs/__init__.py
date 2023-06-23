@@ -7,6 +7,7 @@ import platform
 import re
 import shutil
 import signal
+import stat
 import subprocess
 import sys
 import tempfile
@@ -33,7 +34,7 @@ __all__ = [
 ]
 
 
-_PathLike = _t.Union[str, os.PathLike[str], bytes, os.PathLike[bytes]]
+_PathLike = _t.Union[str, os.PathLike]
 
 
 class VhsError(Exception):
@@ -341,8 +342,8 @@ def _install_vhs(
     else:
         raise VhsError(f"platform {sys.platform} is not supported")
 
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        tmp_dir = pathlib.Path(tmp_dir)
+    with tempfile.TemporaryDirectory() as tmp_dir_s:
+        tmp_dir = pathlib.Path(tmp_dir_s)
 
         try:
             tmp_file = _download_latest_release(
@@ -350,7 +351,10 @@ def _install_vhs(
             )
 
             shutil.unpack_archive(tmp_file, tmp_dir)
-            os.replace(tmp_dir / _get_name("vhs"), bin_path / _get_name("vhs"))
+            vhs_file = bin_path / _get_name("vhs")
+            os.replace(tmp_dir / _get_name("vhs"), vhs_file)
+            if sys.platform != "win32":
+                vhs_file.chmod(vhs_file.stat().st_mode | stat.S_IEXEC)
         except Exception as e:
             raise VhsError(f"vhs install failed: {e}")
 
@@ -365,14 +369,17 @@ def _install_ttyd(
     else:
         raise VhsError(f"platform {sys.platform} is not supported")
 
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        tmp_dir = pathlib.Path(tmp_dir)
+    with tempfile.TemporaryDirectory() as tmp_dir_s:
+        tmp_dir = pathlib.Path(tmp_dir_s)
 
         try:
             tmp_file = _download_latest_release(
                 "ttyd", "tsl0922/ttyd", tmp_dir, filter, reporter
             )
-            os.replace(tmp_file, bin_path / _get_name("ttyd"))
+            ttyd_file = bin_path / _get_name("ttyd")
+            os.replace(tmp_file, ttyd_file)
+            if sys.platform != "win32":
+                ttyd_file.chmod(ttyd_file.stat().st_mode | stat.S_IEXEC)
         except Exception as e:
             raise VhsError(f"ttyd install failed: {e}")
 
@@ -389,8 +396,8 @@ def _install_ffmpeg(
     else:
         raise VhsError(f"platform {sys.platform} is not supported")
 
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        tmp_dir = pathlib.Path(tmp_dir)
+    with tempfile.TemporaryDirectory() as tmp_dir_s:
+        tmp_dir = pathlib.Path(tmp_dir_s)
 
         try:
             tmp_file = _download_latest_release(
@@ -408,7 +415,10 @@ def _install_ffmpeg(
             shutil.unpack_archive(tmp_file, tmp_dir)
 
             for file in (tmp_dir / archive_basename / "bin").iterdir():
-                os.replace(file, bin_path / file.name)
+                dst_file = bin_path / file.name
+                os.replace(file, dst_file)
+                if sys.platform != "win32":
+                    dst_file.chmod(dst_file.stat().st_mode | stat.S_IEXEC)
 
         except Exception as e:
             raise VhsError(f"ffmpeg install failed: {e}")
