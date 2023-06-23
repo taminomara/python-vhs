@@ -15,21 +15,21 @@ import urllib.request
 
 import github
 
-_logger = logging.getLogger('vhs')
+_logger = logging.getLogger("vhs")
 
 try:
     from __init__._version import __version__, __version_tuple__
 except ImportError:
     raise ImportError(
-        'vhs._version not found. if you are developing locally, '
-        'run `pip install -e .[test,doc]` to generate it'
+        "vhs._version not found. if you are developing locally, "
+        "run `pip install -e .[test,doc]` to generate it"
     )
 
 
 __all__ = [
-    'VhsError',
-    'VhsRunError',
-    'Vhs',
+    "VhsError",
+    "VhsRunError",
+    "Vhs",
 ]
 
 
@@ -52,23 +52,23 @@ class VhsRunError(VhsError, subprocess.CalledProcessError):
     def __str__(self):
         if self.returncode and self.returncode < 0:
             try:
-                returncode = f'signal {signal.Signals(-self.returncode)}'
+                returncode = f"signal {signal.Signals(-self.returncode)}"
             except ValueError:
-                returncode = f'unknown signal {self.returncode}'
+                returncode = f"unknown signal {self.returncode}"
         else:
-            returncode = f'code {self.returncode}'
+            returncode = f"code {self.returncode}"
 
-        msg = f'VHS run failed with {returncode}'
+        msg = f"VHS run failed with {returncode}"
         stderr = self.stderr
         if self.stderr:
             if isinstance(stderr, bytes):
-                stderr = stderr.decode('utf-8', errors='replace')
-            msg += f'\n\nStderr:\n{stderr}'
+                stderr = stderr.decode("utf-8", errors="replace")
+            msg += f"\n\nStderr:\n{stderr}"
         stdout = self.stdout
         if self.stdout:
             if isinstance(stdout, bytes):
-                stdout = stdout.decode('utf-8', errors='replace')
-            msg += f'\n\nStdout:\n{stdout}'
+                stdout = stdout.decode("utf-8", errors="replace")
+            msg += f"\n\nStdout:\n{stdout}"
         return msg
 
 
@@ -99,13 +99,13 @@ class Vhs:
         cls,
         *,
         cache_path: _t.Optional[pathlib.Path] = None,
-        min_version: str = '0.5.0',
+        min_version: str = "0.5.0",
         quiet: bool = True,
         env: _t.Optional[_t.Dict[str, str]] = None,
         cwd: _t.Optional[os.PathLike] = None,
         install: bool = True,
         reporter: _t.Optional[_t.Callable[[str, int, int], None]] = None,
-    ) -> 'Vhs':
+    ) -> "Vhs":
         """
         Find a system VHS installation or download VHS from GitHub.
 
@@ -139,7 +139,7 @@ class Vhs:
         """
 
         if cache_path is None:
-            cache_path = pathlib.Path(tempfile.gettempdir()) / 'python_vhs_cache'
+            cache_path = pathlib.Path(tempfile.gettempdir()) / "python_vhs_cache"
 
         vhs_path, path = _check_and_install(
             min_version, cache_path, _get_path(env), install, reporter
@@ -189,7 +189,7 @@ class Vhs:
         if env is None:
             env = os.environ
         env = env.copy()
-        env['PATH'] = self._path
+        env["PATH"] = self._path
 
         if cwd is None:
             cwd = self._cwd
@@ -197,14 +197,14 @@ class Vhs:
         args = [self._vhs_path]
         capture_output = False
         if quiet:
-            args += ['-q']
+            args += ["-q"]
             capture_output = True
         if output_path:
-            args += ['-o', output_path]
+            args += ["-o", output_path]
         args += [input_path]
 
         try:
-            _logger.debug('running VHS with args %r', args)
+            _logger.debug("running VHS with args %r", args)
             subprocess.run(
                 args,
                 capture_output=capture_output,
@@ -248,7 +248,7 @@ class Vhs:
 
         """
 
-        with tempfile.NamedTemporaryFile('w', suffix='.tape') as tmp_file:
+        with tempfile.NamedTemporaryFile("w", suffix=".tape") as tmp_file:
             tmp_file.write(input_text)
             self.run(
                 input_path=tmp_file.name,
@@ -262,14 +262,14 @@ class Vhs:
 def default_stderr_reporter(desc: str, dl_size: int, total_size: int):
     if total_size:
         print(
-            f'{desc}: {dl_size}/{total_size}MB', file=sys.stderr, end='\r', flush=True
+            f"{desc}: {dl_size}/{total_size}MB", file=sys.stderr, end="\r", flush=True
         )
     else:
-        print(f'{desc}', file=sys.stderr)
+        print(f"{desc}", file=sys.stderr)
 
 
 def _get_path(env: _t.Optional[_t.Dict[str, str]]) -> str:
-    path = (env or {}).get('PATH', None)
+    path = (env or {}).get("PATH", None)
     if path is None:
         path = os.environ.get("PATH", None)
     if path is None:
@@ -281,8 +281,8 @@ def _get_path(env: _t.Optional[_t.Dict[str, str]]) -> str:
 
 
 def _get_name(name: str):
-    if sys.platform == 'win32':
-        return name + '.exe'
+    if sys.platform == "win32":
+        return name + ".exe"
     else:
         return name
 
@@ -305,18 +305,18 @@ def _download_latest_release(
                 browser_download_url = asset.browser_download_url
                 break
         else:
-            raise VhsError(f'unable to find {name} release for platform {sys.platform}')
+            raise VhsError(f"unable to find {name} release for platform {sys.platform}")
 
         break
     else:
-        raise VhsError(f'unable to find latest {name} release')
+        raise VhsError(f"unable to find latest {name} release")
 
     if reporter is not None:
-        reporthook = lambda bn, bs, sz: reporter(f'downloading {name}', bn * bs, sz)
+        reporthook = lambda bn, bs, sz: reporter(f"downloading {name}", bn * bs, sz)
     else:
         reporthook = None
 
-    basename = browser_download_url.rstrip('/').rsplit('/', maxsplit=1)[1]
+    basename = browser_download_url.rstrip("/").rsplit("/", maxsplit=1)[1]
     urllib.request.urlretrieve(
         browser_download_url, dest / basename, reporthook=reporthook
     )
@@ -326,101 +326,101 @@ def _download_latest_release(
 def _install_vhs(
     bin_path: pathlib.Path, reporter: _t.Optional[_t.Callable[[str, int, int], None]]
 ):
-    if sys.platform == 'linux':
-        filter = lambda name: name == 'vhs_Linux_x86_64.tar.gz'
-    elif sys.platform == 'win32':
-        filter = lambda name: name == 'vhs_Windows_x86_64.zip'
+    if sys.platform == "linux":
+        filter = lambda name: name == "vhs_Linux_x86_64.tar.gz"
+    elif sys.platform == "win32":
+        filter = lambda name: name == "vhs_Windows_x86_64.zip"
     else:
-        raise VhsError(f'platform {sys.platform} is not supported')
+        raise VhsError(f"platform {sys.platform} is not supported")
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_dir = pathlib.Path(tmp_dir)
 
         try:
             tmp_file = _download_latest_release(
-                'vhs', 'charmbracelet/vhs', tmp_dir, filter, reporter
+                "vhs", "charmbracelet/vhs", tmp_dir, filter, reporter
             )
 
             shutil.unpack_archive(tmp_file, tmp_dir)
-            os.replace(tmp_dir / _get_name('vhs'), bin_path / _get_name('vhs'))
+            os.replace(tmp_dir / _get_name("vhs"), bin_path / _get_name("vhs"))
         except Exception as e:
-            raise VhsError(f'vhs install failed: {e}')
+            raise VhsError(f"vhs install failed: {e}")
 
 
 def _install_ttyd(
     bin_path: pathlib.Path, reporter: _t.Optional[_t.Callable[[str, int, int], None]]
 ):
-    if sys.platform == 'linux':
-        filter = lambda name: name.endswith('x86_64')
-    elif sys.platform == 'win32':
-        filter = lambda name: name.endswith(('win10.exe', 'win32.exe'))
+    if sys.platform == "linux":
+        filter = lambda name: name.endswith("x86_64")
+    elif sys.platform == "win32":
+        filter = lambda name: name.endswith(("win10.exe", "win32.exe"))
     else:
-        raise VhsError(f'platform {sys.platform} is not supported')
+        raise VhsError(f"platform {sys.platform} is not supported")
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_dir = pathlib.Path(tmp_dir)
 
         try:
             tmp_file = _download_latest_release(
-                'ttyd', 'tsl0922/ttyd', tmp_dir, filter, reporter
+                "ttyd", "tsl0922/ttyd", tmp_dir, filter, reporter
             )
-            os.replace(tmp_file, bin_path / _get_name('ttyd'))
+            os.replace(tmp_file, bin_path / _get_name("ttyd"))
         except Exception as e:
-            raise VhsError(f'ttyd install failed: {e}')
+            raise VhsError(f"ttyd install failed: {e}")
 
 
 def _install_ffmpeg(
     bin_path: pathlib.Path, reporter: _t.Optional[_t.Callable[[str, int, int], None]]
 ):
-    if sys.platform == 'linux':
+    if sys.platform == "linux":
         filter = (
-            lambda name: name.startswith('ffmpeg-n5.1') and 'linux64-gpl-5.1' in name
+            lambda name: name.startswith("ffmpeg-n5.1") and "linux64-gpl-5.1" in name
         )
-    elif sys.platform == 'win32':
-        filter = lambda name: name.startswith('ffmpeg-n5.1') and 'win64-gpl-5.1' in name
+    elif sys.platform == "win32":
+        filter = lambda name: name.startswith("ffmpeg-n5.1") and "win64-gpl-5.1" in name
     else:
-        raise VhsError(f'platform {sys.platform} is not supported')
+        raise VhsError(f"platform {sys.platform} is not supported")
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_dir = pathlib.Path(tmp_dir)
 
         try:
             tmp_file = _download_latest_release(
-                'ffmpeg', 'BtbN/FFmpeg-Builds', tmp_dir, filter, reporter
+                "ffmpeg", "BtbN/FFmpeg-Builds", tmp_dir, filter, reporter
             )
 
             archive_basename = tmp_file.name
-            if archive_basename.endswith('.zip'):
-                archive_basename = archive_basename[: -len('.zip')]
-            elif archive_basename.endswith('.tar.gz'):
-                archive_basename = archive_basename[: -len('.tar.gz')]
-            elif archive_basename.endswith('.tar.xz'):
-                archive_basename = archive_basename[: -len('.tar.xz')]
+            if archive_basename.endswith(".zip"):
+                archive_basename = archive_basename[: -len(".zip")]
+            elif archive_basename.endswith(".tar.gz"):
+                archive_basename = archive_basename[: -len(".tar.gz")]
+            elif archive_basename.endswith(".tar.xz"):
+                archive_basename = archive_basename[: -len(".tar.xz")]
 
             shutil.unpack_archive(tmp_file, tmp_dir)
 
-            for file in (tmp_dir / archive_basename / 'bin').iterdir():
+            for file in (tmp_dir / archive_basename / "bin").iterdir():
                 os.replace(file, bin_path / file.name)
 
         except Exception as e:
-            raise VhsError(f'ffmpeg install failed: {e}')
+            raise VhsError(f"ffmpeg install failed: {e}")
 
 
 def _check_version(
     version: str, vhs_path: _PathLike
 ) -> _t.Tuple[bool, _t.Optional[str]]:
-    version_tuple = tuple(int(c) for c in version.split('.'))
+    version_tuple = tuple(int(c) for c in version.split("."))
     try:
-        system_version_text = subprocess.check_output([vhs_path, '--version'])
+        system_version_text = subprocess.check_output([vhs_path, "--version"])
         system_version_text = system_version_text.decode().strip()
-        if match := re.match(r'^vhs version (\d+\.\d+\.\d+)$', system_version_text):
+        if match := re.match(r"^vhs version (\d+\.\d+\.\d+)$", system_version_text):
             system_version = match.group(1)
-            system_version_tuple = tuple(int(c) for c in system_version.split('.'))
+            system_version_tuple = tuple(int(c) for c in system_version.split("."))
             if system_version_tuple >= version_tuple:
                 return True, system_version
             else:
                 _logger.debug(
-                    '%s is outdated (got %s, required %s)',
+                    "%s is outdated (got %s, required %s)",
                     vhs_path,
                     system_version,
                     version,
@@ -429,7 +429,7 @@ def _check_version(
     except (subprocess.SubprocessError, UnicodeDecodeError):
         pass
 
-    _logger.debug('%s failed to print its version', vhs_path)
+    _logger.debug("%s failed to print its version", vhs_path)
     return False, None
 
 
@@ -440,87 +440,87 @@ def _check_and_install(
     install: bool,
     reporter: _t.Optional[_t.Callable[[str, int, int], None]] = None,
 ) -> _t.Tuple[pathlib.Path, str]:
-    if version.startswith('v'):
+    if version.startswith("v"):
         version = version[1:]
 
     # Try finding pre-installed vhs.
-    system_vhs_path = shutil.which('', path=path)
+    system_vhs_path = shutil.which("", path=path)
     system_version = None
     if system_vhs_path:
         can_use_system_vhs, system_version = _check_version(version, system_vhs_path)
         if can_use_system_vhs:
-            _logger.debug('using pre-installed vhs at %s', system_vhs_path)
+            _logger.debug("using pre-installed vhs at %s", system_vhs_path)
             return pathlib.Path(system_vhs_path), path
     else:
-        _logger.debug('pre-installed vhs not found')
+        _logger.debug("pre-installed vhs not found")
 
     # Check system compatibility.
-    if sys.platform == 'darwin':
+    if sys.platform == "darwin":
         if system_vhs_path:
             raise VhsError(
-                f'you have VHS {system_version}, '
-                f'but version {version} or newer is required; '
-                f'run `brew upgrade vhs` to upgrade it, or see installation instructions '
-                f'at https://github.com/charmbracelet/vhs#installation'
+                f"you have VHS {system_version}, "
+                f"but version {version} or newer is required; "
+                f"run `brew upgrade vhs` to upgrade it, or see installation instructions "
+                f"at https://github.com/charmbracelet/vhs#installation"
             )
         else:
             raise VhsError(
-                f'VHS is not installed on your system; '
-                f'run `brew install vhs` to install it, or see installation instructions '
-                f'at https://github.com/charmbracelet/vhs#installation'
+                f"VHS is not installed on your system; "
+                f"run `brew install vhs` to install it, or see installation instructions "
+                f"at https://github.com/charmbracelet/vhs#installation"
             )
     elif (
         not install
-        or sys.platform not in ['win32', 'linux']
-        or platform.architecture()[0] != '64bit'
+        or sys.platform not in ["win32", "linux"]
+        or platform.architecture()[0] != "64bit"
     ):
         if system_vhs_path:
             raise VhsError(
-                f'you have VHS {system_version}, '
-                f'but version {version} or newer is required; '
-                f'see upgrade instructions '
-                f'at https://github.com/charmbracelet/vhs#installation'
+                f"you have VHS {system_version}, "
+                f"but version {version} or newer is required; "
+                f"see upgrade instructions "
+                f"at https://github.com/charmbracelet/vhs#installation"
             )
         else:
             raise VhsError(
-                f'VHS is not installed on your system; '
-                f'see installation instructions '
-                f'at https://github.com/charmbracelet/vhs#installation'
+                f"VHS is not installed on your system; "
+                f"see installation instructions "
+                f"at https://github.com/charmbracelet/vhs#installation"
             )
 
     # Download binary releases or use cached ones.
 
-    if not bin_path.joinpath(_get_name('ttyd')).exists():
-        _logger.debug('downloading ttyd')
+    if not bin_path.joinpath(_get_name("ttyd")).exists():
+        _logger.debug("downloading ttyd")
         _install_ttyd(bin_path, reporter)
     else:
-        _logger.debug('using cached ttyd')
+        _logger.debug("using cached ttyd")
 
-    if not bin_path.joinpath(_get_name('ffmpeg')).exists():
-        _logger.debug('downloading ffmpeg')
+    if not bin_path.joinpath(_get_name("ffmpeg")).exists():
+        _logger.debug("downloading ffmpeg")
         _install_ffmpeg(bin_path, reporter)
     else:
-        _logger.debug('using cached ffmpeg')
+        _logger.debug("using cached ffmpeg")
 
     if path:
-        sep = ';' if sys.platform == 'win32' else ':'
+        sep = ";" if sys.platform == "win32" else ":"
         path = str(bin_path) + sep + path
     else:
         path = str(bin_path)
 
-    vhs_path = bin_path / _get_name('vhs')
+    vhs_path = bin_path / _get_name("vhs")
     if vhs_path.exists():
         can_use_cached_vhs, _ = _check_version(version, vhs_path)
         if can_use_cached_vhs:
-            _logger.debug('using cached vhs')
+            _logger.debug("using cached vhs")
             return vhs_path, path
 
     _install_vhs(bin_path, reporter)
 
     if not _check_version(version, vhs_path):
         _logger.warning(
-            'downloaded latest vhs is outdated; '
-            'are you sure min_vhs_version is correct?'
+            "downloaded latest vhs is outdated; "
+            "are you sure min_vhs_version is correct?"
         )
 
     return vhs_path, path
