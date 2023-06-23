@@ -34,6 +34,8 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install '.[test]'
+      - name: Check codestyle
+        run: black .
       - name: Test package
         run: pytest --junit-xml=test-results.xml
       - name: Generate summary
@@ -41,7 +43,6 @@ jobs:
         if: always()
         with:
           path: test-results.xml
-
 #  publish:
 #    name: Publish to PyPi
 #    runs-on: ubuntu-latest
