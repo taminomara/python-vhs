@@ -21,10 +21,10 @@ def test_system_vhs(tmpdir):
     detected_vhs = vhs.resolve(cache_path=tmpdir)
     assert detected_vhs._vhs_path == pathlib.Path(system_vhs)
 
-    if sys.platform == 'win32':
+    if sys.platform == "win32":
         res = _do_vhs_test_win(detected_vhs, tmpdir)
 
-        assert 'hello world' in res
+        assert "hello world" in res
     else:
         res = _do_vhs_test(detected_vhs, tmpdir)
 
@@ -97,7 +97,7 @@ def _do_vhs_test_win(detected_vhs: vhs.Vhs, tmpdir):
         Enter
         """,
         tmpdir / "out.gif",
-        )
+    )
 
     with open(tmpdir / "out.txt") as f:
         return f.read()

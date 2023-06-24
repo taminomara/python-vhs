@@ -399,9 +399,7 @@ def _install_ffmpeg(
     bin_path: pathlib.Path,
     reporter: _t.Optional[_t.Callable[[str, int, int], None]],
 ):
-    filter = (
-        lambda name: name.startswith("ffmpeg-n5.1") and "linux64-gpl-5.1" in name
-    )
+    filter = lambda name: name.startswith("ffmpeg-n5.1") and "linux64-gpl-5.1" in name
 
     with tempfile.TemporaryDirectory() as tmp_dir_s:
         tmp_dir = pathlib.Path(tmp_dir_s)
@@ -498,9 +496,7 @@ def _check_and_install(
                 f"at https://github.com/charmbracelet/vhs#installation"
             )
     elif (
-        not install
-        or sys.platform != "linux"
-        or platform.architecture()[0] != "64bit"
+        not install or sys.platform != "linux" or platform.architecture()[0] != "64bit"
     ):
         if system_vhs_path:
             raise VhsError(
@@ -532,7 +528,7 @@ def _check_and_install(
         _logger.debug("using cached ffmpeg")
 
     if path:
-        path = str(bin_path) + ':' + path
+        path = str(bin_path) + ":" + path
     else:
         path = str(bin_path)
 
