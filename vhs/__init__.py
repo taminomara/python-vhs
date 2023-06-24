@@ -239,7 +239,10 @@ def resolve(
         if false, disables installing VHS from GitHub.
     :param reporter:
         a hook that will be called to inform user about installation
-        progress. See :func:`default_stderr_reporter` for details.
+        progress. The hook should accept three parameters: a description
+        of a currently performed operation, number of bytes downloaded,
+        total number of bytes to download.
+        See :func:`default_stderr_reporter` for an example.
     :return:
         resolved VHS installation.
     :raises VhsError:
@@ -265,7 +268,21 @@ def resolve(
     )
 
 
-def default_stderr_reporter(desc: str, dl_size: int, total_size: int):
+def default_stderr_reporter(desc: str, dl_size: int, total_size: int, /):
+    """
+    Default progress reported that prints current progress to stderr.
+
+    :param desc:
+        description of the currently performed operation.
+    :param dl_size:
+        when the installer downloads files, this number indicates
+        number of bytes downloaded so far. Otherwise, it is set to zero.
+    :param total_size:
+        when the installer downloads files, this number indicates
+        total number of bytes to download. Otherwise, it is set to zero.
+
+    """
+
     if total_size:
         print(
             f"{desc}: {dl_size}/{total_size}MB", file=sys.stderr, end="\r", flush=True
@@ -278,7 +295,7 @@ def _get_path(env: _t.Optional[_t.Dict[str, str]]) -> str:
     path = (env or {}).get("PATH", None)
     if path is None:
         path = os.environ.get("PATH", None)
-    if path is None:
+    if path is None and sys.platform != 'win32':
         try:
             path = os.confstr("CS_PATH")
         except (AttributeError, ValueError):

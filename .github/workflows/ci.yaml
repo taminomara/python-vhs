@@ -42,7 +42,7 @@ jobs:
         with:
           path: _empty_vhs_tape.tape
       - name: Test package
-        run: pytest --junit-xml=test-results.xml
+        run: pytest -vv --showlocals --tb=short --color=yes --junit-xml=test-results.xml
       - name: Generate summary
         uses: pmeier/pytest-summary-gha@main
         if: always()
