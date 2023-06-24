@@ -192,9 +192,9 @@ class Vhs:
 
         """
 
-        with tempfile.NamedTemporaryFile("w", suffix=".tape") as tmp_file:
-            tmp_file.write(input_text)
-            tmp_file.flush()
+        with tempfile.TemporaryDirectory as d:
+            tmp_file = pathlib.Path(d) / 'input.tape'
+            tmp_file.write_text(input_text)
             self.run(
                 input_path=tmp_file.name,
                 output_path=output_path,
@@ -285,7 +285,7 @@ def _get_path(env: _t.Optional[_t.Dict[str, str]]) -> str:
     if path is None:
         path = os.defpath
     if path is None:
-        path = ''
+        path = ""
     return path
 
 
@@ -444,10 +444,13 @@ def _check_version(
                     version,
                 )
                 return False, system_version
+        else:
+            _logger.debug(
+                "%s printed invalid version %r", vhs_path, system_version_text
+            )
     except (subprocess.SubprocessError, OSError, UnicodeDecodeError):
-        pass
+        _logger.debug("%s failed to print its version", vhs_path, exc_info=True)
 
-    _logger.debug("%s failed to print its version", vhs_path)
     return False, None
 
 
