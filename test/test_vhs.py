@@ -105,8 +105,8 @@ def _do_vhs_test(
 
 def _san_path(s: str) -> str:
     s = s.replace("\\", "/").lower()
-    if s.startswith("c://"):
-        s = "/c/" + s[4:]
+    if s.startswith("c:/"):
+        s = s[3:]
     if s.endswith(".exe"):
         s = s[:-4]
     return s
