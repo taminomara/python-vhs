@@ -29,7 +29,11 @@ def test_system_vhs(tmpdir):
         detected_vhs.run_inline(
             f"""
             Output "{tmpdir / 'out.txt'}"
-            Type "which vhs; which ttyd; which ffmpeg"
+            Type "which vhs"
+            Enter
+            Type "which ttyd"
+            Enter
+            Type "which ffmpeg"
             Enter
             """,
             tmpdir / "out.gif",
@@ -52,7 +56,11 @@ def test_system_vhs_unavailable(tmpdir):
     detected_vhs.run_inline(
         f"""
         Output "{tmpdir / 'out.txt'}"
-        Type "which vhs; which ttyd; which ffmpeg"
+        Type "which vhs"
+        Enter
+        Type "which ttyd"
+        Enter
+        Type "which ffmpeg"
         Enter
         """,
         tmpdir / "out.gif",
