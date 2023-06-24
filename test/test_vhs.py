@@ -21,30 +21,25 @@ def test_system_vhs(tmpdir):
     detected_vhs = vhs.resolve(cache_path=tmpdir)
     assert detected_vhs._vhs_path == pathlib.Path(system_vhs)
 
-    if sys.platform == "win32":
-        res = _do_vhs_test_win(detected_vhs, tmpdir)
+    detected_vhs.run_inline(
+        f"""
+        Output "{tmpdir / 'out.txt'}"
+        Type "which vhs"
+        Enter
+        Type "which ttyd"
+        Enter
+        Type "which ffmpeg"
+        Enter
+        """,
+        tmpdir / "out.gif",
+    )
 
-        assert "hello world" in res
-    else:
-        detected_vhs.run_inline(
-            f"""
-            Output "{tmpdir / 'out.txt'}"
-            Type "which vhs"
-            Enter
-            Type "which ttyd"
-            Enter
-            Type "which ffmpeg"
-            Enter
-            """,
-            tmpdir / "out.gif",
-        )
+    with open(tmpdir / "out.txt") as f:
+        res = f.read()
 
-        with open(tmpdir / "out.txt") as f:
-            res = f.read()
-
-        assert system_vhs in res
-        assert shutil.which("ttyd") in res
-        assert shutil.which("ffmpeg") in res
+    assert system_vhs in res
+    assert shutil.which("ttyd") in res
+    assert shutil.which("ffmpeg") in res
 
 
 @pytest.mark.linux
