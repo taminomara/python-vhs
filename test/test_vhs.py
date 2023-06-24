@@ -3,9 +3,9 @@ import os
 import pathlib
 import shutil
 
-import vhs
-
 import pytest
+
+import vhs
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -82,9 +82,9 @@ def _do_vhs_test(
     ttyd_path,
     ffmpeg_path,
 ):
-    detected_vhs.run_inline(
+    res = _run_inline(
+        detected_vhs,
         f"""
-        Output "{tmpdir / 'out.txt'}"
         Type "which vhs"
         Enter
         Type "which ttyd"
@@ -92,25 +92,102 @@ def _do_vhs_test(
         Type "which ffmpeg"
         Enter
         """,
-        tmpdir / "out.gif",
+        tmpdir,
     )
 
-    with open(tmpdir / "out.txt") as f:
-        res = f.read().lower()
-
-    assert _san_path(str(vhs_path)) in res
-    assert _san_path(str(ttyd_path)) in res
-    assert _san_path(str(ffmpeg_path)) in res
+    assert _path_in_res(vhs_path, res)
+    assert _path_in_res(ttyd_path, res)
+    assert _path_in_res(ffmpeg_path, res)
 
 
-def _san_path(s: str) -> str:
-    s = s.replace("\\", "/").lower()
+def _path_in_res(s, res) -> bool:
+    s = str(s).replace("\\", "/").lower()
     if s.startswith("c:/"):
         s = s[3:]
     if s.endswith(".exe"):
         s = s[:-4]
-    return s
+    return s in str(res).lower().replace("\n", "").replace("\r", "")
 
 
-def test_reporter():
-    pass
+def _run(detected_vhs: vhs.Vhs, tape: str, tmpdir, **kwargs) -> str:
+    tape = f"Output `{tmpdir / 'out.txt'}`\n" + tape
+
+    tape_file = tmpdir / "input.tape"
+    with open(tape_file, "w") as f:
+        f.write(tape)
+
+    detected_vhs.run(tape_file, tmpdir / "out.gif", **kwargs)
+
+    with open(tmpdir / "out.txt") as f:
+        return f.read()
+
+
+def _run_inline(detected_vhs: vhs.Vhs, tape: str, tmpdir, **kwargs) -> str:
+    tape = f"Output `{tmpdir / 'out.txt'}`\n" + tape
+
+    detected_vhs.run_inline(tape, tmpdir / "out.gif", **kwargs)
+
+    with open(tmpdir / "out.txt") as f:
+        return f.read()
+
+
+@pytest.mark.parametrize("runner", [_run, _run_inline])
+def test_env(tmpdir, runner):
+    res = runner(
+        vhs.resolve(cache_path=tmpdir, env={**os.environ, "SOME_VAR": "SOME_TEXT"}),
+        f"""
+        Type "echo $SOME_VAR"
+        Enter
+        """,
+        tmpdir,
+    )
+
+    assert "SOME_TEXT" in res
+
+    res = runner(
+        vhs.resolve(cache_path=tmpdir, env={**os.environ, "SOME_VAR_1": "SOME_TEXT"}),
+        f"""
+        Type "echo $SOME_VAR_1"
+        Enter
+        Type "echo $SOME_VAR_2"
+        Enter
+        """,
+        tmpdir,
+        env={**os.environ, "SOME_VAR_2": "OTHER_TEXT"},
+    )
+
+    assert "SOME_TEXT" not in res
+    assert "OTHER_TEXT" in res
+
+
+@pytest.mark.parametrize("runner", [_run, _run_inline])
+def test_cwd(tmpdir, runner):
+    cwd1 = tmpdir / "cwd1"
+    cwd1.mkdir()
+
+    res = runner(
+        vhs.resolve(cache_path=tmpdir, cwd=cwd1),
+        f"""
+        Type "pwd"
+        Enter
+        """,
+        tmpdir,
+    )
+
+    assert _path_in_res(cwd1, res)
+
+    cwd2 = tmpdir / "cwd2"
+    cwd2.mkdir()
+
+    res = runner(
+        vhs.resolve(cache_path=tmpdir, cwd=cwd1),
+        f"""
+        Type "pwd"
+        Enter
+        """,
+        tmpdir,
+        cwd=cwd2,
+    )
+
+    assert not _path_in_res(cwd1, res)
+    assert _path_in_res(cwd2, res)
