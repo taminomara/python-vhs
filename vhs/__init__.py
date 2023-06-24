@@ -15,6 +15,7 @@ import typing as _t
 import urllib.request
 
 import github
+import urllib3
 
 _logger = logging.getLogger("vhs")
 
@@ -297,13 +298,14 @@ def _get_name(name: str):
 
 
 def _download_latest_release(
+    api: github.Github,
     name: str,
     repo_name: str,
     dest: pathlib.Path,
     filter: _t.Callable[[str], bool],
     reporter: _t.Optional[_t.Callable[[str, int, int], None]],
 ):
-    repo = github.Github().get_repo(repo_name)
+    repo = api.get_repo(repo_name)
 
     for release in repo.get_releases():
         if release.draft or release.prerelease:
@@ -333,7 +335,9 @@ def _download_latest_release(
 
 
 def _install_vhs(
-    bin_path: pathlib.Path, reporter: _t.Optional[_t.Callable[[str, int, int], None]]
+    api: github.Github,
+    bin_path: pathlib.Path,
+    reporter: _t.Optional[_t.Callable[[str, int, int], None]],
 ):
     if sys.platform == "linux":
         filter = lambda name: name == "vhs_Linux_x86_64.tar.gz"
@@ -347,7 +351,7 @@ def _install_vhs(
 
         try:
             tmp_file = _download_latest_release(
-                "vhs", "charmbracelet/vhs", tmp_dir, filter, reporter
+                api, "vhs", "charmbracelet/vhs", tmp_dir, filter, reporter
             )
 
             shutil.unpack_archive(tmp_file, tmp_dir)
@@ -360,7 +364,9 @@ def _install_vhs(
 
 
 def _install_ttyd(
-    bin_path: pathlib.Path, reporter: _t.Optional[_t.Callable[[str, int, int], None]]
+    api: github.Github,
+    bin_path: pathlib.Path,
+    reporter: _t.Optional[_t.Callable[[str, int, int], None]],
 ):
     if sys.platform == "linux":
         filter = lambda name: name.endswith("x86_64")
@@ -374,7 +380,7 @@ def _install_ttyd(
 
         try:
             tmp_file = _download_latest_release(
-                "ttyd", "tsl0922/ttyd", tmp_dir, filter, reporter
+                api, "ttyd", "tsl0922/ttyd", tmp_dir, filter, reporter
             )
             ttyd_file = bin_path / _get_name("ttyd")
             os.replace(tmp_file, ttyd_file)
@@ -385,7 +391,9 @@ def _install_ttyd(
 
 
 def _install_ffmpeg(
-    bin_path: pathlib.Path, reporter: _t.Optional[_t.Callable[[str, int, int], None]]
+    api: github.Github,
+    bin_path: pathlib.Path,
+    reporter: _t.Optional[_t.Callable[[str, int, int], None]],
 ):
     if sys.platform == "linux":
         filter = (
@@ -401,7 +409,7 @@ def _install_ffmpeg(
 
         try:
             tmp_file = _download_latest_release(
-                "ffmpeg", "BtbN/FFmpeg-Builds", tmp_dir, filter, reporter
+                api, "ffmpeg", "BtbN/FFmpeg-Builds", tmp_dir, filter, reporter
             )
 
             archive_basename = tmp_file.name
@@ -431,7 +439,7 @@ def _check_version(
     try:
         system_version_text_b = subprocess.check_output([vhs_path, "--version"])
         system_version_text = system_version_text_b.decode().strip()
-        if match := re.match(r"^vhs version (\d+\.\d+\.\d+)$", system_version_text):
+        if match := re.search(r"(\d+\.\d+\.\d+)", system_version_text):
             system_version = match.group(1)
             system_version_tuple = tuple(int(c) for c in system_version.split("."))
             if system_version_tuple >= version_tuple:
@@ -510,16 +518,17 @@ def _check_and_install(
             )
 
     # Download binary releases or use cached ones.
+    api = github.Github(retry=urllib3.Retry(10, backoff_factor=0.2, backoff_jitter=1))
 
     if not bin_path.joinpath(_get_name("ttyd")).exists():
         _logger.debug("downloading ttyd")
-        _install_ttyd(bin_path, reporter)
+        _install_ttyd(api, bin_path, reporter)
     else:
         _logger.debug("using cached ttyd")
 
     if not bin_path.joinpath(_get_name("ffmpeg")).exists():
         _logger.debug("downloading ffmpeg")
-        _install_ffmpeg(bin_path, reporter)
+        _install_ffmpeg(api, bin_path, reporter)
     else:
         _logger.debug("using cached ffmpeg")
 
@@ -536,7 +545,7 @@ def _check_and_install(
             _logger.debug("using cached vhs")
             return vhs_path, path
 
-    _install_vhs(bin_path, reporter)
+    _install_vhs(api, bin_path, reporter)
 
     can_use_cached_vhs, _ = _check_version(version, vhs_path)
     if not can_use_cached_vhs:
