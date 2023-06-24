@@ -32,6 +32,7 @@ __all__ = [
     "VhsError",
     "VhsRunError",
     "Vhs",
+    "resolve",
 ]
 
 
@@ -221,7 +222,7 @@ def resolve(
     If VHS is not installed, or it's outdated, try to download it
     and install it into `cache_path`.
 
-    Automatic download only works on 64-bit Linux and Windows.
+    Automatic download only works on 64-bit Linux.
     MacOS users will be presented with an instruction to use `brew`,
     and other systems users will get a link to VHS installation guide.
 
@@ -295,7 +296,7 @@ def _get_path(env: _t.Optional[_t.Dict[str, str]]) -> str:
     path = (env or {}).get("PATH", None)
     if path is None:
         path = os.environ.get("PATH", None)
-    if path is None and sys.platform != "win32":
+    if path is None:
         try:
             path = os.confstr("CS_PATH")
         except (AttributeError, ValueError):
@@ -305,13 +306,6 @@ def _get_path(env: _t.Optional[_t.Dict[str, str]]) -> str:
     if path is None:
         path = ""
     return path
-
-
-def _get_name(name: str):
-    if sys.platform == "win32":
-        return name + ".exe"
-    else:
-        return name
 
 
 def _download_latest_release(
@@ -356,12 +350,7 @@ def _install_vhs(
     bin_path: pathlib.Path,
     reporter: _t.Optional[_t.Callable[[str, int, int], None]],
 ):
-    if sys.platform == "linux":
-        filter = lambda name: name == "vhs_Linux_x86_64.tar.gz"
-    elif sys.platform == "win32":
-        filter = lambda name: name == "vhs_Windows_x86_64.zip"
-    else:
-        raise VhsError(f"platform {sys.platform} is not supported")
+    filter = lambda name: name == "vhs_Linux_x86_64.tar.gz"
 
     with tempfile.TemporaryDirectory() as tmp_dir_s:
         tmp_dir = pathlib.Path(tmp_dir_s)
@@ -372,10 +361,12 @@ def _install_vhs(
             )
 
             shutil.unpack_archive(tmp_file, tmp_dir)
-            vhs_file = bin_path / _get_name("vhs")
-            os.replace(tmp_dir / _get_name("vhs"), vhs_file)
-            if sys.platform != "win32":
-                vhs_file.chmod(vhs_file.stat().st_mode | stat.S_IEXEC)
+
+            src = tmp_dir / "vhs"
+            dst = bin_path / "vhs"
+
+            os.replace(src, dst)
+            dst.chmod(dst.stat().st_mode | stat.S_IEXEC)
         except Exception as e:
             raise VhsError(f"vhs install failed: {e}")
 
@@ -385,12 +376,7 @@ def _install_ttyd(
     bin_path: pathlib.Path,
     reporter: _t.Optional[_t.Callable[[str, int, int], None]],
 ):
-    if sys.platform == "linux":
-        filter = lambda name: name.endswith("x86_64")
-    elif sys.platform == "win32":
-        filter = lambda name: name.endswith(("win10.exe", "win32.exe"))
-    else:
-        raise VhsError(f"platform {sys.platform} is not supported")
+    filter = lambda name: name.endswith("x86_64")
 
     with tempfile.TemporaryDirectory() as tmp_dir_s:
         tmp_dir = pathlib.Path(tmp_dir_s)
@@ -399,10 +385,11 @@ def _install_ttyd(
             tmp_file = _download_latest_release(
                 api, "ttyd", "tsl0922/ttyd", tmp_dir, filter, reporter
             )
-            ttyd_file = bin_path / _get_name("ttyd")
-            os.replace(tmp_file, ttyd_file)
-            if sys.platform != "win32":
-                ttyd_file.chmod(ttyd_file.stat().st_mode | stat.S_IEXEC)
+
+            dst = bin_path / "ttyd"
+
+            os.replace(tmp_file, dst)
+            dst.chmod(dst.stat().st_mode | stat.S_IEXEC)
         except Exception as e:
             raise VhsError(f"ttyd install failed: {e}")
 
@@ -412,14 +399,9 @@ def _install_ffmpeg(
     bin_path: pathlib.Path,
     reporter: _t.Optional[_t.Callable[[str, int, int], None]],
 ):
-    if sys.platform == "linux":
-        filter = (
-            lambda name: name.startswith("ffmpeg-n5.1") and "linux64-gpl-5.1" in name
-        )
-    elif sys.platform == "win32":
-        filter = lambda name: name.startswith("ffmpeg-n5.1") and "win64-gpl-5.1" in name
-    else:
-        raise VhsError(f"platform {sys.platform} is not supported")
+    filter = (
+        lambda name: name.startswith("ffmpeg-n5.1") and "linux64-gpl-5.1" in name
+    )
 
     with tempfile.TemporaryDirectory() as tmp_dir_s:
         tmp_dir = pathlib.Path(tmp_dir_s)
@@ -439,11 +421,11 @@ def _install_ffmpeg(
 
             shutil.unpack_archive(tmp_file, tmp_dir)
 
-            for file in (tmp_dir / archive_basename / "bin").iterdir():
-                dst_file = bin_path / file.name
-                os.replace(file, dst_file)
-                if sys.platform != "win32":
-                    dst_file.chmod(dst_file.stat().st_mode | stat.S_IEXEC)
+            for src in (tmp_dir / archive_basename / "bin").iterdir():
+                dst = bin_path / src.name
+
+                os.replace(src, dst)
+                dst.chmod(dst.stat().st_mode | stat.S_IEXEC)
 
         except Exception as e:
             raise VhsError(f"ffmpeg install failed: {e}")
@@ -517,7 +499,7 @@ def _check_and_install(
             )
     elif (
         not install
-        or sys.platform not in ["win32", "linux"]
+        or sys.platform != "linux"
         or platform.architecture()[0] != "64bit"
     ):
         if system_vhs_path:
@@ -537,25 +519,24 @@ def _check_and_install(
     # Download binary releases or use cached ones.
     api = github.Github(retry=urllib3.Retry(10, backoff_factor=0.2, backoff_jitter=1))
 
-    if not bin_path.joinpath(_get_name("ttyd")).exists():
+    if not (bin_path / "ttyd").exists():
         _logger.debug("downloading ttyd")
         _install_ttyd(api, bin_path, reporter)
     else:
         _logger.debug("using cached ttyd")
 
-    if not bin_path.joinpath(_get_name("ffmpeg")).exists():
+    if not (bin_path / "ffmpeg").exists():
         _logger.debug("downloading ffmpeg")
         _install_ffmpeg(api, bin_path, reporter)
     else:
         _logger.debug("using cached ffmpeg")
 
     if path:
-        sep = ";" if sys.platform == "win32" else ":"
-        path = str(bin_path) + sep + path
+        path = str(bin_path) + ':' + path
     else:
         path = str(bin_path)
 
-    vhs_path = bin_path / _get_name("vhs")
+    vhs_path = bin_path / "vhs"
     if vhs_path.exists():
         can_use_cached_vhs, _ = _check_version(version, vhs_path)
         if can_use_cached_vhs:
