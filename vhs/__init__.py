@@ -296,7 +296,7 @@ def _get_path(env: _t.Optional[_t.Dict[str, str]]) -> str:
     path = (env or {}).get("PATH", None)
     if path is None:
         path = os.environ.get("PATH", None)
-    if path is None and sys.platform != 'win32':
+    if path is None and sys.platform != "win32":
         try:
             path = os.confstr("CS_PATH")
         except (AttributeError, ValueError):
