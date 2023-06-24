@@ -26,7 +26,17 @@ def test_system_vhs(tmpdir):
 
         assert "hello world" in res
     else:
-        res = _do_vhs_test(detected_vhs, tmpdir)
+        detected_vhs.run_inline(
+            f"""
+            Output "{tmpdir / 'out.txt'}"
+            Type "which vhs; which ttyd; which ffmpeg"
+            Enter
+            """,
+            tmpdir / "out.gif",
+        )
+
+        with open(tmpdir / "out.txt") as f:
+            res = f.read()
 
         assert system_vhs in res
         assert shutil.which("ttyd") in res
@@ -39,7 +49,17 @@ def test_system_vhs_unavailable(tmpdir):
     assert detected_vhs._vhs_path == pathlib.Path(tmpdir) / "vhs"
     assert detected_vhs._path.startswith(str(tmpdir))
 
-    res = _do_vhs_test(detected_vhs, tmpdir)
+    detected_vhs.run_inline(
+        f"""
+        Output "{tmpdir / 'out.txt'}"
+        Type "which vhs; which ttyd; which ffmpeg"
+        Enter
+        """,
+        tmpdir / "out.gif",
+    )
+
+    with open(tmpdir / "out.txt") as f:
+        res = f.read()
 
     assert str(tmpdir / "vhs") in res
     assert str(tmpdir / "ttyd") in res
@@ -73,20 +93,6 @@ def test_system_vhs_outdated_darwin(tmpdir):
         vhs.VhsError, match=r"but version 9999.0.0 or newer is required"
     ):
         vhs.resolve(cache_path=tmpdir, min_version="9999.0.0")
-
-
-def _do_vhs_test(detected_vhs: vhs.Vhs, tmpdir):
-    detected_vhs.run_inline(
-        f"""
-        Output "{tmpdir / 'out.txt'}"
-        Type "which vhs; which ttyd; which ffmpeg"
-        Enter
-        """,
-        tmpdir / "out.gif",
-    )
-
-    with open(tmpdir / "out.txt") as f:
-        return f.read()
 
 
 def _do_vhs_test_win(detected_vhs: vhs.Vhs, tmpdir):
