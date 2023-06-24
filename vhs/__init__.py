@@ -197,7 +197,7 @@ class Vhs:
             tmp_file = pathlib.Path(d) / "input.tape"
             tmp_file.write_text(input_text)
             self.run(
-                input_path=tmp_file.name,
+                input_path=tmp_file,
                 output_path=output_path,
                 quiet=quiet,
                 env=env,
