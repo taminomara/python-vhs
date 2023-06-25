@@ -199,12 +199,14 @@ def test_cwd(tmpdir, runner):
 
 @pytest.mark.linux
 def test_progress(tmpdir, capsys):
-    vhs.resolve(cache_path=tmpdir, env={"PATH": os.defpath}, reporter=vhs.default_stderr_reporter)
+    vhs.resolve(
+        cache_path=tmpdir,
+        env={"PATH": os.defpath},
+        reporter=vhs.default_stderr_reporter,
+    )
 
     err: str = capsys.readouterr().err
 
-    lines = '\n'.join(
-        line.rstrip("\r").rsplit("\r", 1)[-1] for line in err.split("\n")
-    )
+    lines = "\n".join(line.rstrip("\r").rsplit("\r", 1)[-1] for line in err.split("\n"))
 
     assert lines == ""
