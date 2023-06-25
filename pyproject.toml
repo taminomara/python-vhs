@@ -31,7 +31,7 @@ test = [
 ]
 doc = [
     "sphinx>=6.0.0",
-    "sphinxawesome-theme~=5.0.0b2",
+    "furo",
 ]
 
 [project.urls]

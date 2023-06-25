@@ -2,6 +2,7 @@ import logging
 import os
 import pathlib
 import shutil
+import sys
 
 import pytest
 
@@ -133,10 +134,11 @@ def _run_inline(detected_vhs: vhs.Vhs, tape: str, tmpdir, **kwargs) -> str:
 
 @pytest.mark.parametrize("runner", [_run, _run_inline])
 def test_env(tmpdir, runner):
+    var_name = "$SOME_VAR%" if sys.platform == "win32" else "$SOME_VAR"
     res = runner(
         vhs.resolve(cache_path=tmpdir, env={**os.environ, "SOME_VAR": "SOME_TEXT"}),
         f"""
-        Type "echo $SOME_VAR"
+        Type "echo {var_name}"
         Enter
         """,
         tmpdir,
@@ -144,12 +146,14 @@ def test_env(tmpdir, runner):
 
     assert "SOME_TEXT" in res
 
+    var_name_1 = "$SOME_VAR_1%" if sys.platform == "win32" else "$SOME_VAR_1"
+    var_name_2 = "$SOME_VAR_2%" if sys.platform == "win32" else "$SOME_VAR_2"
     res = runner(
         vhs.resolve(cache_path=tmpdir, env={**os.environ, "SOME_VAR_1": "SOME_TEXT"}),
         f"""
-        Type "echo $SOME_VAR_1"
+        Type "echo {var_name_1}"
         Enter
-        Type "echo $SOME_VAR_2"
+        Type "echo {var_name_2}"
         Enter
         """,
         tmpdir,
@@ -191,3 +195,16 @@ def test_cwd(tmpdir, runner):
 
     assert not _path_in_res(cwd1, res)
     assert _path_in_res(cwd2, res)
+
+
+@pytest.mark.linux
+def test_progress(tmpdir, capsys):
+    vhs.resolve(cache_path=tmpdir, env={"PATH": os.defpath}, reporter=vhs.default_stderr_reporter)
+
+    err: str = capsys.readouterr().err
+
+    lines = '\n'.join(
+        line.rstrip("\r").rsplit("\r", 1)[-1] for line in err.split("\n")
+    )
+
+    assert lines == ""
