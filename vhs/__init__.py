@@ -317,7 +317,8 @@ def _download_latest_release(
     filter: _t.Callable[[str], bool],
     reporter: _t.Optional[_t.Callable[[str, int, int], None]],
 ):
-    reporter(f"resolving {name}", 0, 0)
+    if reporter:
+        reporter(f"resolving {name}", 0, 0)
 
     repo = api.get_repo(repo_name)
 
@@ -336,7 +337,7 @@ def _download_latest_release(
     else:
         raise VhsError(f"unable to find latest {name} release")
 
-    if reporter is not None:
+    if reporter:
         reporthook = lambda bn, bs, sz: reporter(f"downloading {name}", bn * bs, sz)
     else:
         reporthook = None
@@ -347,7 +348,8 @@ def _download_latest_release(
         browser_download_url, dest / basename, reporthook=reporthook
     )
 
-    reporthook(0, 0, 0)
+    if reporter:
+        reporthook(0, 0, 0)
 
     return dest / basename
 
@@ -367,7 +369,8 @@ def _install_vhs(
                 api, "vhs", "charmbracelet/vhs", tmp_dir, filter, reporter
             )
 
-            reporter(f"processing vhs", 0, 0)
+            if reporter:
+                reporter(f"processing vhs", 0, 0)
 
             shutil.unpack_archive(tmp_file, tmp_dir)
 
@@ -395,7 +398,8 @@ def _install_ttyd(
                 api, "ttyd", "tsl0922/ttyd", tmp_dir, filter, reporter
             )
 
-            reporter(f"processing ttyd", 0, 0)
+            if reporter:
+                reporter(f"processing ttyd", 0, 0)
 
             dst = bin_path / "ttyd"
 
@@ -420,7 +424,8 @@ def _install_ffmpeg(
                 api, "ffmpeg", "BtbN/FFmpeg-Builds", tmp_dir, filter, reporter
             )
 
-            reporter(f"processing ffmpeg", 0, 0)
+            if reporter:
+                reporter(f"processing ffmpeg", 0, 0)
 
             archive_basename = tmp_file.name
             if archive_basename.endswith(".zip"):
