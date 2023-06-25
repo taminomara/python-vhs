@@ -83,14 +83,16 @@ def _do_vhs_test(
     ttyd_path,
     ffmpeg_path,
 ):
+    which = "where" if sys.platform == "win32" else "which"
+
     res = _run_inline(
         detected_vhs,
         f"""
-        Type "which vhs"
+        Type "{which} vhs"
         Enter
-        Type "which ttyd"
+        Type "{which} ttyd"
         Enter
-        Type "which ffmpeg"
+        Type "{which} ffmpeg"
         Enter
         """,
         tmpdir,
@@ -102,12 +104,10 @@ def _do_vhs_test(
 
 
 def _path_in_res(s, res) -> bool:
-    s = str(s).replace("\\", "/").lower()
-    if s.startswith("c:/"):
-        s = s[3:]
-    if s.endswith(".exe"):
-        s = s[:-4]
-    return s in str(res).lower().replace("\n", "").replace("\r", "")
+    s, res = str(s), str(res)
+    if sys.platform == "win32":
+        s, res = s.lower(), res.lower()
+    return s in res.replace("\n", "").replace("\r", "")
 
 
 def _run(detected_vhs: vhs.Vhs, tape: str, tmpdir, **kwargs) -> str:
@@ -204,7 +204,7 @@ def test_progress(tmpdir, capsys):
     vhs.resolve(
         cache_path=tmpdir,
         env={"PATH": os.defpath},
-        reporter=vhs.default_stderr_reporter,
+        reporter=vhs.DefaultProgressReporter(),
     )
 
     err: str = capsys.readouterr().err

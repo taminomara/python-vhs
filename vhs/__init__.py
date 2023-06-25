@@ -206,6 +206,65 @@ class Vhs:
             )
 
 
+class ProgressReporter:
+    """
+    Interface for reporting installation progress.
+
+    """
+
+    def start(self):
+        """
+        Called when installation starts.
+
+        """
+
+    def progress(self, desc: str, dl_size: int, total_size: int, /):
+        """
+        Called to update current progress.
+
+        :param desc:
+            description of the currently performed operation.
+        :param dl_size:
+            when the installer downloads files, this number indicates
+            number of bytes downloaded so far. Otherwise, it is set to zero.
+        :param total_size:
+            when the installer downloads files, this number indicates
+            total number of bytes to download. Otherwise, it is set to zero.
+
+        """
+
+    def finish(self):
+        """
+        Called when installation finishes.
+
+        """
+
+    def _as_reporthook(self, name: str):
+        return lambda bn, bs, sz: self.progress(f"downloadinf {name}", bn * bs, sz)
+
+
+class DefaultProgressReporter(ProgressReporter):
+    """
+    Default reported that prints progress to stderr.
+
+    """
+
+    _prev_len = 0
+
+    def progress(self, desc: str, dl_size: int, total_size: int, /):
+        if total_size:
+            dl_size_mb = dl_size / 1024**2
+            total_size_mb = total_size / 1024**2
+            desc += f": {dl_size_mb:.1f}/{total_size_mb:.1f}MB"
+        sys.stderr.write(desc.ljust(self._prev_len) + "\r")
+        self._prev_len = len(desc)
+        sys.stderr.flush()
+
+    def finish(self):
+        sys.stderr.write(f"vhs installed\n")
+        sys.stderr.flush()
+
+
 def resolve(
     *,
     cache_path: _t.Optional[pathlib.Path] = None,
@@ -214,7 +273,7 @@ def resolve(
     env: _t.Optional[_t.Dict[str, str]] = None,
     cwd: _t.Optional[_PathLike] = None,
     install: bool = True,
-    reporter: _t.Optional[_t.Callable[[str, int, int], None]] = None,
+    reporter: ProgressReporter = ProgressReporter(),
 ) -> "Vhs":
     """
     Find a system VHS installation or download VHS from GitHub.
@@ -256,9 +315,13 @@ def resolve(
     else:
         cache_path = pathlib.Path(cache_path)
 
-    vhs_path, path = _check_and_install(
-        min_version, cache_path, _get_path(env), install, reporter
-    )
+    reporter.start()
+    try:
+        vhs_path, path = _check_and_install(
+            min_version, cache_path, _get_path(env), install, reporter
+        )
+    finally:
+        reporter.finish()
 
     return Vhs(
         _vhs_path=vhs_path,
@@ -267,30 +330,6 @@ def resolve(
         _env=env,
         _cwd=cwd,
     )
-
-
-def default_stderr_reporter(desc: str, dl_size: int, total_size: int, /):
-    """
-    Default progress reported that prints current progress to stderr.
-
-    :param desc:
-        description of the currently performed operation.
-    :param dl_size:
-        when the installer downloads files, this number indicates
-        number of bytes downloaded so far. Otherwise, it is set to zero.
-    :param total_size:
-        when the installer downloads files, this number indicates
-        total number of bytes to download. Otherwise, it is set to zero.
-
-    """
-
-    if total_size:
-        dl_size /= 1024**2
-        total_size /= 1024**2
-        sys.stderr.write(f"{desc}: {dl_size:.1f}/{total_size:.1f}MB\r")
-    else:
-        sys.stderr.write(f"{desc}\n")
-    sys.stderr.flush()
 
 
 def _get_path(env: _t.Optional[_t.Dict[str, str]]) -> str:
@@ -315,10 +354,9 @@ def _download_latest_release(
     repo_name: str,
     dest: pathlib.Path,
     filter: _t.Callable[[str], bool],
-    reporter: _t.Optional[_t.Callable[[str, int, int], None]],
+    reporter: ProgressReporter,
 ):
-    if reporter:
-        reporter(f"resolving {name}", 0, 0)
+    reporter.progress(f"resolving {name}", 0, 0)
 
     repo = api.get_repo(repo_name)
 
@@ -337,19 +375,11 @@ def _download_latest_release(
     else:
         raise VhsError(f"unable to find latest {name} release")
 
-    if reporter:
-        reporthook = lambda bn, bs, sz: reporter(f"downloading {name}", bn * bs, sz)
-    else:
-        reporthook = None
-
     basename = browser_download_url.rstrip("/").rsplit("/", maxsplit=1)[1]
 
     urllib.request.urlretrieve(
-        browser_download_url, dest / basename, reporthook=reporthook
+        browser_download_url, dest / basename, reporthook=reporter._as_reporthook(name)
     )
-
-    if reporter:
-        reporthook(0, 0, 0)
 
     return dest / basename
 
@@ -357,7 +387,7 @@ def _download_latest_release(
 def _install_vhs(
     api: github.Github,
     bin_path: pathlib.Path,
-    reporter: _t.Optional[_t.Callable[[str, int, int], None]],
+    reporter: ProgressReporter,
 ):
     filter = lambda name: name == "vhs_Linux_x86_64.tar.gz"
 
@@ -369,8 +399,7 @@ def _install_vhs(
                 api, "vhs", "charmbracelet/vhs", tmp_dir, filter, reporter
             )
 
-            if reporter:
-                reporter(f"processing vhs", 0, 0)
+            reporter.progress(f"processing vhs", 0, 0)
 
             shutil.unpack_archive(tmp_file, tmp_dir)
 
@@ -386,7 +415,7 @@ def _install_vhs(
 def _install_ttyd(
     api: github.Github,
     bin_path: pathlib.Path,
-    reporter: _t.Optional[_t.Callable[[str, int, int], None]],
+    reporter: ProgressReporter,
 ):
     filter = lambda name: name.endswith("x86_64")
 
@@ -398,8 +427,7 @@ def _install_ttyd(
                 api, "ttyd", "tsl0922/ttyd", tmp_dir, filter, reporter
             )
 
-            if reporter:
-                reporter(f"processing ttyd", 0, 0)
+            reporter.progress(f"processing ttyd", 0, 0)
 
             dst = bin_path / "ttyd"
 
@@ -412,7 +440,7 @@ def _install_ttyd(
 def _install_ffmpeg(
     api: github.Github,
     bin_path: pathlib.Path,
-    reporter: _t.Optional[_t.Callable[[str, int, int], None]],
+    reporter: ProgressReporter,
 ):
     filter = lambda name: name.startswith("ffmpeg-n5.1") and "linux64-gpl-5.1" in name
 
@@ -424,8 +452,7 @@ def _install_ffmpeg(
                 api, "ffmpeg", "BtbN/FFmpeg-Builds", tmp_dir, filter, reporter
             )
 
-            if reporter:
-                reporter(f"processing ffmpeg", 0, 0)
+            reporter.progress(f"processing ffmpeg", 0, 0)
 
             archive_basename = tmp_file.name
             if archive_basename.endswith(".zip"):
@@ -482,7 +509,7 @@ def _check_and_install(
     bin_path: pathlib.Path,
     path: str,
     install: bool,
-    reporter: _t.Optional[_t.Callable[[str, int, int], None]] = None,
+    reporter: ProgressReporter,
 ) -> _t.Tuple[pathlib.Path, str]:
     if version.startswith("v"):
         version = version[1:]
@@ -569,11 +596,3 @@ def _check_and_install(
     #     )
 
     return vhs_path, path
-
-
-if __name__ == "__main__":
-    resolve(
-        cache_path=pathlib.Path.cwd() / "bin",
-        env={"PATH": os.defpath},
-        reporter=default_stderr_reporter,
-    )
