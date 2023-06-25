@@ -240,7 +240,7 @@ class ProgressReporter:
         """
 
     def _as_reporthook(self, name: str):
-        return lambda bn, bs, sz: self.progress(f"downloadinf {name}", bn * bs, sz)
+        return lambda bn, bs, sz: self.progress(f"downloading {name}", bn * bs, sz)
 
 
 class DefaultProgressReporter(ProgressReporter):
