@@ -134,7 +134,7 @@ def _run_inline(detected_vhs: vhs.Vhs, tape: str, tmpdir, **kwargs) -> str:
 
 @pytest.mark.parametrize("runner", [_run, _run_inline])
 def test_env(tmpdir, runner):
-    var_name = "$SOME_VAR%" if sys.platform == "win32" else "$SOME_VAR"
+    var_name = "%SOME_VAR%" if sys.platform == "win32" else "$SOME_VAR"
     res = runner(
         vhs.resolve(cache_path=tmpdir, env={**os.environ, "SOME_VAR": "SOME_TEXT"}),
         f"""
@@ -146,8 +146,8 @@ def test_env(tmpdir, runner):
 
     assert "SOME_TEXT" in res
 
-    var_name_1 = "$SOME_VAR_1%" if sys.platform == "win32" else "$SOME_VAR_1"
-    var_name_2 = "$SOME_VAR_2%" if sys.platform == "win32" else "$SOME_VAR_2"
+    var_name_1 = "%SOME_VAR_1%" if sys.platform == "win32" else "$SOME_VAR_1"
+    var_name_2 = "%SOME_VAR_2%" if sys.platform == "win32" else "$SOME_VAR_2"
     res = runner(
         vhs.resolve(cache_path=tmpdir, env={**os.environ, "SOME_VAR_1": "SOME_TEXT"}),
         f"""
@@ -166,13 +166,15 @@ def test_env(tmpdir, runner):
 
 @pytest.mark.parametrize("runner", [_run, _run_inline])
 def test_cwd(tmpdir, runner):
+    pwd = "cd" if sys.platform == "win32" else "pwd"
+
     cwd1 = tmpdir / "cwd1"
     cwd1.mkdir()
 
     res = runner(
         vhs.resolve(cache_path=tmpdir, cwd=cwd1),
         f"""
-        Type "pwd"
+        Type "{pwd}"
         Enter
         """,
         tmpdir,
@@ -186,7 +188,7 @@ def test_cwd(tmpdir, runner):
     res = runner(
         vhs.resolve(cache_path=tmpdir, cwd=cwd1),
         f"""
-        Type "pwd"
+        Type "{pwd}"
         Enter
         """,
         tmpdir,
