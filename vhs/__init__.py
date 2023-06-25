@@ -285,11 +285,12 @@ def default_stderr_reporter(desc: str, dl_size: int, total_size: int, /):
     """
 
     if total_size:
-        print(
-            f"{desc}: {dl_size}/{total_size}MB", file=sys.stderr, end="\r", flush=True
-        )
+        dl_size /= 1024**2
+        total_size /= 1024**2
+        sys.stderr.write(f"{desc}: {dl_size:.1f}/{total_size:.1f}MB\r")
     else:
-        print(f"{desc}", file=sys.stderr)
+        sys.stderr.write(f"{desc}\n")
+    sys.stderr.flush()
 
 
 def _get_path(env: _t.Optional[_t.Dict[str, str]]) -> str:
@@ -316,6 +317,8 @@ def _download_latest_release(
     filter: _t.Callable[[str], bool],
     reporter: _t.Optional[_t.Callable[[str, int, int], None]],
 ):
+    reporter(f"resolving {name}", 0, 0)
+
     repo = api.get_repo(repo_name)
 
     for release in repo.get_releases():
@@ -339,9 +342,13 @@ def _download_latest_release(
         reporthook = None
 
     basename = browser_download_url.rstrip("/").rsplit("/", maxsplit=1)[1]
+
     urllib.request.urlretrieve(
         browser_download_url, dest / basename, reporthook=reporthook
     )
+
+    reporthook(0, 0, 0)
+
     return dest / basename
 
 
@@ -359,6 +366,8 @@ def _install_vhs(
             tmp_file = _download_latest_release(
                 api, "vhs", "charmbracelet/vhs", tmp_dir, filter, reporter
             )
+
+            reporter(f"processing vhs", 0, 0)
 
             shutil.unpack_archive(tmp_file, tmp_dir)
 
@@ -386,6 +395,8 @@ def _install_ttyd(
                 api, "ttyd", "tsl0922/ttyd", tmp_dir, filter, reporter
             )
 
+            reporter(f"processing ttyd", 0, 0)
+
             dst = bin_path / "ttyd"
 
             os.replace(tmp_file, dst)
@@ -408,6 +419,8 @@ def _install_ffmpeg(
             tmp_file = _download_latest_release(
                 api, "ffmpeg", "BtbN/FFmpeg-Builds", tmp_dir, filter, reporter
             )
+
+            reporter(f"processing ffmpeg", 0, 0)
 
             archive_basename = tmp_file.name
             if archive_basename.endswith(".zip"):
@@ -515,6 +528,8 @@ def _check_and_install(
     # Download binary releases or use cached ones.
     api = github.Github(retry=urllib3.Retry(10, backoff_factor=0.2, backoff_jitter=1))
 
+    bin_path.mkdir(parents=True, exist_ok=True)
+
     if not (bin_path / "ttyd").exists():
         _logger.debug("downloading ttyd")
         _install_ttyd(api, bin_path, reporter)
@@ -533,19 +548,27 @@ def _check_and_install(
         path = str(bin_path)
 
     vhs_path = bin_path / "vhs"
-    if vhs_path.exists():
-        can_use_cached_vhs, _ = _check_version(version, vhs_path)
-        if can_use_cached_vhs:
-            _logger.debug("using cached vhs")
-            return vhs_path, path
+    # if vhs_path.exists():
+    #     can_use_cached_vhs, _ = _check_version(version, vhs_path)
+    #     if can_use_cached_vhs:
+    #         _logger.debug("using cached vhs")
+    #         return vhs_path, path
 
     _install_vhs(api, bin_path, reporter)
 
-    can_use_cached_vhs, _ = _check_version(version, vhs_path)
-    if not can_use_cached_vhs:
-        _logger.warning(
-            "downloaded latest vhs is outdated; "
-            "are you sure min_vhs_version is correct?"
-        )
+    # can_use_cached_vhs, _ = _check_version(version, vhs_path)
+    # if not can_use_cached_vhs:
+    #     _logger.warning(
+    #         "downloaded latest vhs is outdated; "
+    #         "are you sure min_vhs_version is correct?"
+    #     )
 
     return vhs_path, path
+
+
+if __name__ == "__main__":
+    resolve(
+        cache_path=pathlib.Path.cwd() / "bin",
+        env={"PATH": os.defpath},
+        reporter=default_stderr_reporter,
+    )

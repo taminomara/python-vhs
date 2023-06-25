@@ -209,4 +209,12 @@ def test_progress(tmpdir, capsys):
 
     lines = "\n".join(line.rstrip("\r").rsplit("\r", 1)[-1] for line in err.split("\n"))
 
-    assert lines == ""
+    assert "resolving ffmpeg" in lines
+    assert "downloading ffmpeg" in lines
+    assert "processing ffmpeg" in lines
+    assert "resolving ttyd" in lines
+    assert "downloading ttyd" in lines
+    assert "processing ttyd" in lines
+    assert "resolving vhs" in lines
+    assert "downloading vhs" in lines
+    assert "processing vhs" in lines
