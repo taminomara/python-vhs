@@ -8,11 +8,19 @@ on:
   pull_request:
     branches:
       - main
-jobs:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - closed
 
+jobs:
+  # Runs main tests for the package.
+  #
+  # Runs on all events except when closing a pull request.
   test:
     name: Test package
-    runs-on: ${{ matrix.os }}
+    if: ${{ !(github.event_name == 'pull_request' && github.event.action == 'closed') }}
     strategy:
       fail-fast: false
       matrix:
@@ -24,10 +32,12 @@ jobs:
           - "3.10"
           - "3.11"
         include:
-          - os: windows-latest
-            python-version: "3.11"
+          # GitHub windows runner seems to be hanging a lot; no idea why.
+          # - os: windows-latest
+          #   python-version: "3.11"
           - os: macos-latest
             python-version: "3.11"
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout source
         uses: actions/checkout@v3
@@ -51,16 +61,19 @@ jobs:
         run: pytest -vv --showlocals --tb=short --color=yes --junit-xml=test-results.xml
       - name: Generate summary
         uses: pmeier/pytest-summary-gha@main
-        if: always()
+        if: ${{ success() || failure() }}
         with:
           path: test-results.xml
 
-  publish-to-pypi:
+  # Builds and publishes python packages.
+  #
+  # Only runs on tag pushes.
+  publish_to_pypi:
     name: Publish package to PyPi
-    runs-on: ubuntu-latest
     needs:
      - test
-    if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
+    if: ${{ github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags') }}
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout source
         uses: actions/checkout@v3
@@ -80,17 +93,21 @@ jobs:
           password: ${{ secrets.TEST_PYPI_PASSWORD }}
           repository-url: https://test.pypi.org/legacy/
       - name: Publish to pypi
-        if: "!contains(github.event.ref, '.dev')"
+        if: ${{ !contains(github.event.ref, '.dev') }}  # don't upload dev releases to prod pypi
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_PASSWORD }}
           repository-url: https://pypi.org/legacy/
 
-  build-docs:
+  # Builds sphinx documentation.
+  #
+  # Runs on all events except when closing a pull request.
+  build_docs:
     name: Build docs
-    runs-on: ubuntu-latest
     needs:
       - test
+    if: ${{ !(github.event_name == 'pull_request' && github.event.action == 'closed') }}
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -115,20 +132,28 @@ jobs:
           name: html_output
           path: docs/build/html
 
-  publish-docs-preview:
+  # Publishes documentation preview and posts a comment to the initiating PR.
+  #
+  # This job runs on all pull request actions. If also runs when a pull request is closed,
+  # in this case it deletes the preview.
+  #
+  # Since the default condition -- `success()` -- only runs if all dependencies succeeded,
+  # we use `!failure() && !cancelled()`, which also runs when any dependencies were skipped.
+  publish_docs_preview:
     name: Publish docs preview to GitHub Pages
-    if: github.event_name == 'push' && !startsWith(github.event.ref, 'refs/tags')
-    runs-on: ubuntu-latest
     needs:
-      - build-docs
+      - build_docs
+    if: ${{ !failure() && !cancelled() && github.event_name == 'pull_request' }}
     concurrency:
       group: publish-docs-${{ github.ref }}
       cancel-in-progress: true
     permissions: write-all
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Download artifact
+        if: ${{ needs.build_docs.result == 'success' }}  # only download docs if build wasn't skipped
         uses: actions/download-artifact@v3
         with:
           name: html_output
@@ -139,16 +164,19 @@ jobs:
           source-dir: docs/build/html
           umbrella-dir: pr-preview
 
-  publish-docs:
+  # Builds and publishes production docs.
+  #
+  # Only runs on tag pushes.
+  publish_docs:
     name: Publish docs to GitHub Pages
-    if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
-    runs-on: ubuntu-latest
     needs:
-      - build-docs
+      - build_docs
+    if: ${{ github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags') && !contains(github.event.ref, '.dev') }}
     concurrency:
       group: publish-docs-${{ github.ref }}
       cancel-in-progress: true
     permissions: write-all
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -163,4 +191,4 @@ jobs:
           folder: docs/build/html
           target-folder: .
           clean-exclude: pr-preview
-          single-commit: true
+          single-commit: false

@@ -1,5 +1,73 @@
-"""A package that includes VHS binary, and a simple API to run it."""
+"""
+Python-VHS is a tiny python wrapper around VHS_,
+a tool by charm_ that renders terminal commands into GIFs.
 
+This package searches for VHS and its dependencies
+in system's ``PATH``, and invokes them.
+On Linux, if VHS is not found in the system,
+Python-VHS can download necessary binaries from GitHub.
+
+.. _VHS: https://github.com/charmbracelet/vhs
+
+.. _charm: https://charm.sh/
+
+
+Quickstart
+----------
+
+Install VHS:
+
+.. code-block:: sh
+
+    pip3 install vhs
+
+Then resolve VHS binary and run it:
+
+.. code-block:: python
+
+    import vhs
+
+    vhs_runner = vhs.resolve()
+    vhs_runner.run('./example.tape', './example.gif')
+
+
+Reference
+---------
+
+The entry point of the package is the :func:`resolve` function.
+It searches for an installed VHS, checks its version, downloads
+a new one if necessary, and returns a :class:`Vhs` object
+through which you can invoke the found VHS binary:
+
+.. autofunction:: resolve
+
+.. autoclass:: Vhs
+   :members:
+
+In case of an error, VHS raises a :class:`VhsError` or its subclass:
+
+.. autoclass:: VhsError
+
+.. autoclass:: VhsRunError
+
+By default, the :func:`resolve` function silently detects or installs VHS,
+without printing anything (it may emit warning log messages
+to the ``'vhs'`` logger).
+
+You can display installation progress by passing a :class:`ProgressReporter`.
+Specifically, there's :class:`DefaultProgressReporter` which will cover
+most basic cases:
+
+.. autoclass:: ProgressReporter
+   :members:
+
+.. autoclass:: DefaultProgressReporter
+
+"""
+import datetime
+
+import requests
+import requests.adapters
 import logging
 import os
 import pathlib
@@ -12,7 +80,6 @@ import subprocess
 import sys
 import tempfile
 import typing as _t
-import urllib.request
 
 import github
 import urllib3
@@ -32,6 +99,8 @@ __all__ = [
     "VhsError",
     "VhsRunError",
     "Vhs",
+    "ProgressReporter",
+    "DefaultProgressReporter",
     "resolve",
 ]
 
@@ -80,9 +149,10 @@ class Vhs:
     """
     Interface for a VHS installation.
 
+    Do not create directly, use :func:`resolve` instead.
+
     """
 
-    # Do not call this, use `Vhs.resolve_or_install` instead.
     def __init__(
         self,
         *,
@@ -116,11 +186,11 @@ class Vhs:
             path to the output file.
             By default, puts output to whichever path is set in the tape.
         :param quiet:
-            redefine :attr:`Vhs.quiet` for this invocation.
+            redefine `quiet` for this invocation. (see :func:`resolve`).
         :param env:
-            redefine :attr:`Vhs.env` for this invocation.
+            redefine `env` for this invocation. (see :func:`resolve`).
         :param cwd:
-            redefine :attr:`Vhs.cmd` for this invocation.
+            redefine `cmd` for this invocation. (see :func:`resolve`).
 
         :raises VhsRunError: VHS process failed with non-zero return code.
 
@@ -184,11 +254,11 @@ class Vhs:
             path to the output file.
             By default, puts output to whichever path is set in the tape.
         :param quiet:
-            redefine :attr:`Vhs.quiet` for this invocation
+            redefine `quiet` for this invocation (see :func:`resolve`).
         :param env:
-            redefine :attr:`Vhs.env` for this invocation
+            redefine `env` for this invocation (see :func:`resolve`).
         :param cwd:
-            redefine :attr:`Vhs.cmd` for this invocation
+            redefine `cmd` for this invocation (see :func:`resolve`).
 
         :raises VhsRunError: VHS process failed with non-zero return code.
 
@@ -218,7 +288,7 @@ class ProgressReporter:
 
         """
 
-    def progress(self, desc: str, dl_size: int, total_size: int, /):
+    def progress(self, desc: str, dl_size: int, total_size: int, speed: float, /):
         """
         Called to update current progress.
 
@@ -230,6 +300,10 @@ class ProgressReporter:
         :param total_size:
             when the installer downloads files, this number indicates
             total number of bytes to download. Otherwise, it is set to zero.
+        :param speed:
+            when the installer downloads files, this number indicates
+            current downloading speed, in bytes per second. Otherwise,
+            it is set to zero.
 
         """
 
@@ -239,30 +313,33 @@ class ProgressReporter:
 
         """
 
-    def _as_reporthook(self, name: str):
-        return lambda bn, bs, sz: self.progress(f"downloading {name}", bn * bs, sz)
-
 
 class DefaultProgressReporter(ProgressReporter):
     """
-    Default reported that prints progress to stderr.
+    Default reporter that prints progress to stderr.
 
     """
 
     _prev_len = 0
 
-    def progress(self, desc: str, dl_size: int, total_size: int, /):
+    def __init__(self, stream: _t.Optional[_t.TextIO] = None):
+        self.stream = stream or sys.stderr
+
+    def progress(self, desc: str, dl_size: int, total_size: int, speed: float, /):
         if total_size:
             dl_size_mb = dl_size / 1024**2
             total_size_mb = total_size / 1024**2
-            desc += f": {dl_size_mb:.1f}/{total_size_mb:.1f}MB"
-        sys.stderr.write(desc.ljust(self._prev_len) + "\r")
+            speed_mb = speed / 1024**2
+            desc += f": {dl_size_mb:.1f}/{total_size_mb:.1f}MB - {speed_mb:.2f}MB/s"
+
+        self.stream.write(desc.ljust(self._prev_len) + "\r")
+        self.stream.flush()
+
         self._prev_len = len(desc)
-        sys.stderr.flush()
 
     def finish(self):
-        sys.stderr.write(f"vhs installed\n")
-        sys.stderr.flush()
+        self.stream.write(f"vhs installed\n")
+        self.stream.flush()
 
 
 def resolve(
@@ -274,6 +351,8 @@ def resolve(
     cwd: _t.Optional[_PathLike] = None,
     install: bool = True,
     reporter: ProgressReporter = ProgressReporter(),
+    timeout: int = 15,
+    retry: _t.Optional[urllib3.Retry] = None,
 ) -> "Vhs":
     """
     Find a system VHS installation or download VHS from GitHub.
@@ -299,10 +378,14 @@ def resolve(
         if false, disables installing VHS from GitHub.
     :param reporter:
         a hook that will be called to inform user about installation
-        progress. The hook should accept three parameters: a description
-        of a currently performed operation, number of bytes downloaded,
-        total number of bytes to download.
-        See :func:`default_stderr_reporter` for an example.
+        progress. See :class:`ProgressReporter` for API documentation,
+        and :class:`DefaultProgressReporter` for an example.
+    :param timeout:
+        timeout in seconds for connecting to GitHub APIs.
+    :param retry:
+        retry policy for reading from GitHub and downloading releases.
+        The default retry polity uses exponential backoff
+        to avoid rate limiting.
     :return:
         resolved VHS installation.
     :raises VhsError:
@@ -315,10 +398,13 @@ def resolve(
     else:
         cache_path = pathlib.Path(cache_path)
 
+    if retry is None:
+        retry = urllib3.Retry(10, backoff_factor=0.1)
+
     reporter.start()
     try:
         vhs_path, path = _check_and_install(
-            min_version, cache_path, _get_path(env), install, reporter
+            min_version, cache_path, _get_path(env), install, reporter, timeout, retry
         )
     finally:
         reporter.finish()
@@ -350,13 +436,15 @@ def _get_path(env: _t.Optional[_t.Dict[str, str]]) -> str:
 
 def _download_latest_release(
     api: github.Github,
+    timeout: int,
+    retry: urllib3.Retry,
     name: str,
     repo_name: str,
     dest: pathlib.Path,
     filter: _t.Callable[[str], bool],
     reporter: ProgressReporter,
 ):
-    reporter.progress(f"resolving {name}", 0, 0)
+    reporter.progress(f"resolving {name}", 0, 0, 0)
 
     repo = api.get_repo(repo_name)
 
@@ -377,15 +465,46 @@ def _download_latest_release(
 
     basename = browser_download_url.rstrip("/").rsplit("/", maxsplit=1)[1]
 
-    urllib.request.urlretrieve(
-        browser_download_url, dest / basename, reporthook=reporter._as_reporthook(name)
-    )
+    with requests.Session() as session:
+        adapter = requests.adapters.HTTPAdapter(max_retries=retry)
+        session.mount("https://", adapter)
+        session.mount("http://", adapter)
+
+        with requests.get(browser_download_url, stream=True, timeout=timeout) as stream:
+            stream.raise_for_status()
+
+            try:
+                size = int(stream.headers["content-length"])
+            except (KeyError, ValueError):
+                size = -1
+            downloaded = 0
+
+            reporter.progress(f"downloading {name}", downloaded, size, 0)
+
+            start = datetime.datetime.now()
+
+            with open(dest / basename, "wb") as dest_file:
+                for chunk in stream.iter_content(64 * 1024):
+                    dest_file.write(chunk)
+                    if size:
+                        # note: this does not take content-encoding into account.
+                        # our contents are not encoded, though, so this is fine.
+                        downloaded += len(chunk)
+                        speed = (
+                            downloaded
+                            / (datetime.datetime.now() - start).total_seconds()
+                        )
+                        reporter.progress(
+                            f"downloading {name}", downloaded, size, speed
+                        )
 
     return dest / basename
 
 
 def _install_vhs(
     api: github.Github,
+    timeout: int,
+    retry: urllib3.Retry,
     bin_path: pathlib.Path,
     reporter: ProgressReporter,
 ):
@@ -396,10 +515,17 @@ def _install_vhs(
 
         try:
             tmp_file = _download_latest_release(
-                api, "vhs", "charmbracelet/vhs", tmp_dir, filter, reporter
+                api,
+                timeout,
+                retry,
+                "vhs",
+                "charmbracelet/vhs",
+                tmp_dir,
+                filter,
+                reporter,
             )
 
-            reporter.progress(f"processing vhs", 0, 0)
+            reporter.progress(f"processing vhs", 0, 0, 0)
 
             shutil.unpack_archive(tmp_file, tmp_dir)
 
@@ -414,6 +540,8 @@ def _install_vhs(
 
 def _install_ttyd(
     api: github.Github,
+    timeout: int,
+    retry: urllib3.Retry,
     bin_path: pathlib.Path,
     reporter: ProgressReporter,
 ):
@@ -424,21 +552,23 @@ def _install_ttyd(
 
         try:
             tmp_file = _download_latest_release(
-                api, "ttyd", "tsl0922/ttyd", tmp_dir, filter, reporter
+                api, timeout, retry, "ttyd", "tsl0922/ttyd", tmp_dir, filter, reporter
             )
 
-            reporter.progress(f"processing ttyd", 0, 0)
+            reporter.progress(f"processing ttyd", 0, 0, 0)
 
             dst = bin_path / "ttyd"
 
             os.replace(tmp_file, dst)
             dst.chmod(dst.stat().st_mode | stat.S_IEXEC)
         except Exception as e:
-            raise VhsError(f"ttyd install failed: {e}")
+            raise VhsError(f"ttyd install failed: {e}") from e
 
 
 def _install_ffmpeg(
     api: github.Github,
+    timeout: int,
+    retry: urllib3.Retry,
     bin_path: pathlib.Path,
     reporter: ProgressReporter,
 ):
@@ -449,10 +579,17 @@ def _install_ffmpeg(
 
         try:
             tmp_file = _download_latest_release(
-                api, "ffmpeg", "BtbN/FFmpeg-Builds", tmp_dir, filter, reporter
+                api,
+                timeout,
+                retry,
+                "ffmpeg",
+                "BtbN/FFmpeg-Builds",
+                tmp_dir,
+                filter,
+                reporter,
             )
 
-            reporter.progress(f"processing ffmpeg", 0, 0)
+            reporter.progress(f"processing ffmpeg", 0, 0, 0)
 
             archive_basename = tmp_file.name
             if archive_basename.endswith(".zip"):
@@ -510,6 +647,8 @@ def _check_and_install(
     path: str,
     install: bool,
     reporter: ProgressReporter,
+    timeout: int,
+    retry: urllib3.Retry,
 ) -> _t.Tuple[pathlib.Path, str]:
     if version.startswith("v"):
         version = version[1:]
@@ -558,19 +697,19 @@ def _check_and_install(
             )
 
     # Download binary releases or use cached ones.
-    api = github.Github(retry=urllib3.Retry(10, backoff_factor=0.2, backoff_jitter=1))
+    api = github.Github(retry=retry, timeout=timeout)
 
     bin_path.mkdir(parents=True, exist_ok=True)
 
     if not (bin_path / "ttyd").exists():
         _logger.debug("downloading ttyd")
-        _install_ttyd(api, bin_path, reporter)
+        _install_ttyd(api, timeout, retry, bin_path, reporter)
     else:
         _logger.debug("using cached ttyd")
 
     if not (bin_path / "ffmpeg").exists():
         _logger.debug("downloading ffmpeg")
-        _install_ffmpeg(api, bin_path, reporter)
+        _install_ffmpeg(api, timeout, retry, bin_path, reporter)
     else:
         _logger.debug("using cached ffmpeg")
 
@@ -580,19 +719,19 @@ def _check_and_install(
         path = str(bin_path)
 
     vhs_path = bin_path / "vhs"
-    # if vhs_path.exists():
-    #     can_use_cached_vhs, _ = _check_version(version, vhs_path)
-    #     if can_use_cached_vhs:
-    #         _logger.debug("using cached vhs")
-    #         return vhs_path, path
+    if vhs_path.exists():
+        can_use_cached_vhs, _ = _check_version(version, vhs_path)
+        if can_use_cached_vhs:
+            _logger.debug("using cached vhs")
+            return vhs_path, path
 
-    _install_vhs(api, bin_path, reporter)
+    _install_vhs(api, timeout, retry, bin_path, reporter)
 
-    # can_use_cached_vhs, _ = _check_version(version, vhs_path)
-    # if not can_use_cached_vhs:
-    #     _logger.warning(
-    #         "downloaded latest vhs is outdated; "
-    #         "are you sure min_vhs_version is correct?"
-    #     )
+    can_use_cached_vhs, _ = _check_version(version, vhs_path)
+    if not can_use_cached_vhs:
+        _logger.warning(
+            "downloaded latest vhs is outdated; "
+            "are you sure min_vhs_version is correct?"
+        )
 
     return vhs_path, path

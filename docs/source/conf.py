@@ -14,6 +14,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.viewcode",
     "sphinx.ext.githubpages",
+    "sphinxcontrib.jquery",
 ]
 
 intersphinx_mapping = {
@@ -26,4 +27,5 @@ autodoc_member_order = "bysource"
 
 # -- Options for HTML output -------------------------------------------------
 
-html_theme = "furo"
+html_theme = "sphinx_rtd_theme"
+html_extra_path = ["_extra/robots.txt"]
