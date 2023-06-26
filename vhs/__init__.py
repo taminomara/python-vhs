@@ -352,7 +352,7 @@ def resolve(
     install: bool = True,
     reporter: ProgressReporter = ProgressReporter(),
     timeout: int = 15,
-    retry: _t.Union[int, urllib3.Retry, None] = None,
+    retry: _t.Optional[urllib3.Retry] = None,
 ) -> "Vhs":
     """
     Find a system VHS installation or download VHS from GitHub.
@@ -399,7 +399,7 @@ def resolve(
         cache_path = pathlib.Path(cache_path)
 
     if retry is None:
-        retry = urllib3.Retry(10, backoff_factor=0.1, backoff_jitter=1)
+        retry = urllib3.Retry(10, backoff_factor=0.1)
 
     reporter.start()
     try:
@@ -476,7 +476,7 @@ def _download_latest_release(
             try:
                 size = int(stream.headers["content-length"])
             except (KeyError, ValueError):
-                size = None
+                size = -1
             downloaded = 0
 
             reporter.progress(f"downloading {name}", downloaded, size, 0)
