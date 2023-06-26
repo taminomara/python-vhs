@@ -1,4 +1,69 @@
-"""A package that includes VHS binary, and a simple API to run it."""
+"""
+Python-VHS is a tiny python wrapper around VHS_,
+a tool by charm_ that renders terminal commands into GIFs.
+
+This package searches for VHS and its dependencies
+in system's ``PATH``, and invokes them.
+On Linux, if VHS is not found in the system,
+Python-VHS can download necessary binaries from GitHub.
+
+.. _VHS: https://github.com/charmbracelet/vhs
+
+.. _charm: https://charm.sh/
+
+
+Quickstart
+----------
+
+Install VHS:
+
+.. code-block:: sh
+
+    pip3 install vhs
+
+Then resolve VHS binary and run it:
+
+.. code-block:: python
+
+    import vhs
+
+    vhs_runner = vhs.resolve()
+    vhs_runner.run('./example.tape', './example.gif')
+
+
+Reference
+---------
+
+The entry point of the package is the :func:`resolve` function.
+It searches for an installed VHS, checks its version, downloads
+a new one if necessary, and returns a :class:`Vhs` object
+through which you can invoke the found VHS binary:
+
+.. autofunction:: resolve
+
+.. autoclass:: Vhs
+   :members:
+
+In case of an error, VHS raises a :class:`VhsError` or its subclass:
+
+.. autoclass:: VhsError
+
+.. autoclass:: VhsRunError
+
+By default, the :func:`resolve` function silently detects or installs VHS,
+without printing anything (it may emit warning log messages
+to the ``'vhs'`` logger).
+
+You can display installation progress by passing a :class:`ProgressReporter`.
+Specifically, there's :class:`DefaultProgressReporter` which will cover
+most basic cases:
+
+.. autoclass:: ProgressReporter
+   :members:
+
+.. autoclass:: DefaultProgressReporter
+
+"""
 
 import logging
 import os
@@ -32,6 +97,8 @@ __all__ = [
     "VhsError",
     "VhsRunError",
     "Vhs",
+    "ProgressReporter",
+    "DefaultProgressReporter",
     "resolve",
 ]
 
@@ -80,9 +147,10 @@ class Vhs:
     """
     Interface for a VHS installation.
 
+    Do not create directly, use :func:`resolve` instead.
+
     """
 
-    # Do not call this, use `Vhs.resolve_or_install` instead.
     def __init__(
         self,
         *,
@@ -116,11 +184,11 @@ class Vhs:
             path to the output file.
             By default, puts output to whichever path is set in the tape.
         :param quiet:
-            redefine :attr:`Vhs.quiet` for this invocation.
+            redefine `quiet` for this invocation. (see :func:`resolve`).
         :param env:
-            redefine :attr:`Vhs.env` for this invocation.
+            redefine `env` for this invocation. (see :func:`resolve`).
         :param cwd:
-            redefine :attr:`Vhs.cmd` for this invocation.
+            redefine `cmd` for this invocation. (see :func:`resolve`).
 
         :raises VhsRunError: VHS process failed with non-zero return code.
 
@@ -184,11 +252,11 @@ class Vhs:
             path to the output file.
             By default, puts output to whichever path is set in the tape.
         :param quiet:
-            redefine :attr:`Vhs.quiet` for this invocation
+            redefine `quiet` for this invocation (see :func:`resolve`).
         :param env:
-            redefine :attr:`Vhs.env` for this invocation
+            redefine `env` for this invocation (see :func:`resolve`).
         :param cwd:
-            redefine :attr:`Vhs.cmd` for this invocation
+            redefine `cmd` for this invocation (see :func:`resolve`).
 
         :raises VhsRunError: VHS process failed with non-zero return code.
 
@@ -245,24 +313,29 @@ class ProgressReporter:
 
 class DefaultProgressReporter(ProgressReporter):
     """
-    Default reported that prints progress to stderr.
+    Default reporter that prints progress to stderr.
 
     """
 
     _prev_len = 0
+
+    def __init__(self, stream: _t.Optional[_t.TextIO] = None):
+        self.stream = stream or sys.stderr
 
     def progress(self, desc: str, dl_size: int, total_size: int, /):
         if total_size:
             dl_size_mb = dl_size / 1024**2
             total_size_mb = total_size / 1024**2
             desc += f": {dl_size_mb:.1f}/{total_size_mb:.1f}MB"
-        sys.stderr.write(desc.ljust(self._prev_len) + "\r")
+
+        self.stream.write(desc.ljust(self._prev_len) + "\r")
+        self.stream.flush()
+
         self._prev_len = len(desc)
-        sys.stderr.flush()
 
     def finish(self):
-        sys.stderr.write(f"vhs installed\n")
-        sys.stderr.flush()
+        self.stream.write(f"vhs installed\n")
+        self.stream.flush()
 
 
 def resolve(
@@ -299,10 +372,8 @@ def resolve(
         if false, disables installing VHS from GitHub.
     :param reporter:
         a hook that will be called to inform user about installation
-        progress. The hook should accept three parameters: a description
-        of a currently performed operation, number of bytes downloaded,
-        total number of bytes to download.
-        See :func:`default_stderr_reporter` for an example.
+        progress. See :class:`ProgressReporter` for API documentation,
+        and :class:`DefaultProgressReporter` for an example.
     :return:
         resolved VHS installation.
     :raises VhsError:
