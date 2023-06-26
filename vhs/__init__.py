@@ -64,6 +64,7 @@ most basic cases:
 .. autoclass:: DefaultProgressReporter
 
 """
+import datetime
 
 import requests
 import requests.adapters
@@ -287,7 +288,7 @@ class ProgressReporter:
 
         """
 
-    def progress(self, desc: str, dl_size: int, total_size: int, /):
+    def progress(self, desc: str, dl_size: int, total_size: int, speed: float, /):
         """
         Called to update current progress.
 
@@ -299,6 +300,10 @@ class ProgressReporter:
         :param total_size:
             when the installer downloads files, this number indicates
             total number of bytes to download. Otherwise, it is set to zero.
+        :param speed
+            when the installer downloads files, this number indicates
+            current downloading speed, in bytes per second. Otherwise,
+            it is set to zero.
 
         """
 
@@ -320,11 +325,12 @@ class DefaultProgressReporter(ProgressReporter):
     def __init__(self, stream: _t.Optional[_t.TextIO] = None):
         self.stream = stream or sys.stderr
 
-    def progress(self, desc: str, dl_size: int, total_size: int, /):
+    def progress(self, desc: str, dl_size: int, total_size: int, speed: float, /):
         if total_size:
             dl_size_mb = dl_size / 1024**2
             total_size_mb = total_size / 1024**2
-            desc += f": {dl_size_mb:.1f}/{total_size_mb:.1f}MB"
+            speed_mb = speed / 1024**2
+            desc += f": {dl_size_mb:.1f}/{total_size_mb:.1f}MB - {speed_mb:.2f}MB/s"
 
         self.stream.write(desc.ljust(self._prev_len) + "\r")
         self.stream.flush()
@@ -438,7 +444,7 @@ def _download_latest_release(
     filter: _t.Callable[[str], bool],
     reporter: ProgressReporter,
 ):
-    reporter.progress(f"resolving {name}", 0, 0)
+    reporter.progress(f"resolving {name}", 0, 0, 0)
 
     repo = api.get_repo(repo_name)
 
@@ -473,14 +479,24 @@ def _download_latest_release(
                 size = None
             downloaded = 0
 
+            reporter.progress(f"downloading {name}", downloaded, size, 0)
+
+            start = datetime.datetime.now()
+
             with open(dest / basename, "wb") as dest_file:
-                for chunk in stream.iter_content(25 * 1024):
+                for chunk in stream.iter_content(64 * 1024):
                     dest_file.write(chunk)
                     if size:
                         # note: this does not take content-encoding into account.
                         # our contents are not encoded, though, so this is fine.
                         downloaded += len(chunk)
-                        reporter.progress(f"downloading {name}", downloaded, size)
+                        speed = (
+                            downloaded
+                            / (datetime.datetime.now() - start).total_seconds()
+                        )
+                        reporter.progress(
+                            f"downloading {name}", downloaded, size, speed
+                        )
 
     return dest / basename
 
@@ -509,7 +525,7 @@ def _install_vhs(
                 reporter,
             )
 
-            reporter.progress(f"processing vhs", 0, 0)
+            reporter.progress(f"processing vhs", 0, 0, 0)
 
             shutil.unpack_archive(tmp_file, tmp_dir)
 
@@ -539,7 +555,7 @@ def _install_ttyd(
                 api, timeout, retry, "ttyd", "tsl0922/ttyd", tmp_dir, filter, reporter
             )
 
-            reporter.progress(f"processing ttyd", 0, 0)
+            reporter.progress(f"processing ttyd", 0, 0, 0)
 
             dst = bin_path / "ttyd"
 
@@ -573,7 +589,7 @@ def _install_ffmpeg(
                 reporter,
             )
 
-            reporter.progress(f"processing ffmpeg", 0, 0)
+            reporter.progress(f"processing ffmpeg", 0, 0, 0)
 
             archive_basename = tmp_file.name
             if archive_basename.endswith(".zip"):
