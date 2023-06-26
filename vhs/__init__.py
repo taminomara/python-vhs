@@ -300,7 +300,7 @@ class ProgressReporter:
         :param total_size:
             when the installer downloads files, this number indicates
             total number of bytes to download. Otherwise, it is set to zero.
-        :param speed
+        :param speed:
             when the installer downloads files, this number indicates
             current downloading speed, in bytes per second. Otherwise,
             it is set to zero.
