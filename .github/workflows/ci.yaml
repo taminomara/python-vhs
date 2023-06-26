@@ -147,6 +147,7 @@ jobs:
     concurrency:
       group: publish-docs-${{ github.ref }}
       cancel-in-progress: true
+    permissions: write-all
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
