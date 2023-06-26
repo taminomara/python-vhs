@@ -1,0 +1,4 @@
+Python VHS
+==========
+
+.. automodule:: vhs
