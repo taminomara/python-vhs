@@ -59,11 +59,6 @@ jobs:
           path: _empty_vhs_tape.tape
       - name: Test package
         run: pytest -vv --showlocals --tb=short --color=yes --junit-xml=test-results.xml
-      - name: Generate summary
-        uses: pmeier/pytest-summary-gha@main
-        if: ${{ success() || failure() }}
-        with:
-          path: test-results.xml
 
   # Builds and publishes python packages.
   #
