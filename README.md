@@ -6,3 +6,11 @@ and a simple API to run those.
 
 [VHS]: https://github.com/charmbracelet/vhs
 [charm]: https://charm.sh/
+
+## Resources
+
+- [Documentation](https://taminomara.github.io/python-vhs/)
+- [Issues](https://github.com/taminomara/python-vhs/issues)
+- [Source](https://github.com/taminomara/python-vhs/)
+- [PyPi](https://pypi.org/project/python-vhs/)
+- [Changelog](https://github.com/taminomara/python-vhs/blob/main/CHANGELOG.md)
