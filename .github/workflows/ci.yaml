@@ -82,11 +82,11 @@ jobs:
       - name: Build project
         run: |
           python3 -m build .
-      - name: Publish to test pypi
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          password: ${{ secrets.TEST_PYPI_PASSWORD }}
-          repository-url: https://test.pypi.org/legacy/
+#      - name: Publish to test pypi
+#        uses: pypa/gh-action-pypi-publish@release/v1
+#        with:
+#          password: ${{ secrets.TEST_PYPI_PASSWORD }}
+#          repository-url: https://test.pypi.org/legacy/
       - name: Publish to pypi
         if: ${{ !contains(github.event.ref, '.dev') }}  # don't upload dev releases to prod pypi
         uses: pypa/gh-action-pypi-publish@release/v1
