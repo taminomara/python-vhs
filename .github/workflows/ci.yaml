@@ -97,7 +97,6 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_PASSWORD }}
-          repository-url: https://pypi.org/legacy/
 
   # Builds sphinx documentation.
   #
