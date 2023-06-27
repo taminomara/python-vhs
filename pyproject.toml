@@ -37,9 +37,10 @@ doc = [
 ]
 
 [project.urls]
-Documentation = "https://python-vhs.readthedocs.io/en/stable/"
-Issues = "https://github.com/taminomara/python-vhs/issues"
+Documentation = "https://taminomara.github.io/python-vhs/"
+Issues = "https://github.com/taminomara/python-vhs/issues/"
 Source = "https://github.com/taminomara/python-vhs/"
+PyPi = "https://pypi.org/project/vhs/"
 Changelog = "https://github.com/taminomara/python-vhs/blob/main/CHANGELOG.md"
 
 [build-system]

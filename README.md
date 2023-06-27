@@ -12,5 +12,5 @@ and a simple API to run those.
 - [Documentation](https://taminomara.github.io/python-vhs/)
 - [Issues](https://github.com/taminomara/python-vhs/issues)
 - [Source](https://github.com/taminomara/python-vhs/)
-- [PyPi](https://pypi.org/project/python-vhs/)
+- [PyPi](https://pypi.org/project/vhs/)
 - [Changelog](https://github.com/taminomara/python-vhs/blob/main/CHANGELOG.md)
