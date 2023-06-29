@@ -90,10 +90,13 @@ def _do_vhs_test(
         f"""
         Type "{which} vhs"
         Enter
+        Sleep 500
         Type "{which} ttyd"
         Enter
+        Sleep 500
         Type "{which} ffmpeg"
         Enter
+        Sleep 500
         """,
         tmpdir,
     )
@@ -140,6 +143,7 @@ def test_env(tmpdir, runner):
         f"""
         Type "echo {var_name}"
         Enter
+        Sleep 500
         """,
         tmpdir,
     )
@@ -153,8 +157,10 @@ def test_env(tmpdir, runner):
         f"""
         Type "echo {var_name_1}"
         Enter
+        Sleep 500
         Type "echo {var_name_2}"
         Enter
+        Sleep 500
         """,
         tmpdir,
         env={**os.environ, "SOME_VAR_2": "OTHER_TEXT"},
@@ -176,6 +182,7 @@ def test_cwd(tmpdir, runner):
         f"""
         Type "{pwd}"
         Enter
+        Sleep 500
         """,
         tmpdir,
     )
@@ -190,6 +197,7 @@ def test_cwd(tmpdir, runner):
         f"""
         Type "{pwd}"
         Enter
+        Sleep 500
         """,
         tmpdir,
         cwd=cwd2,
