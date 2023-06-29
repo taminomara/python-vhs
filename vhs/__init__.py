@@ -28,7 +28,7 @@ Then resolve VHS binary and run it:
     import vhs
 
     vhs_runner = vhs.resolve()
-    vhs_runner.run('./example.tape', './example.gif')
+    vhs_runner.run("./example.tape", "./example.gif")
 
 
 Reference
@@ -41,6 +41,8 @@ through which you can invoke the found VHS binary:
 
 .. autofunction:: resolve
 
+.. autofunction:: default_cache_path
+
 .. autoclass:: Vhs
    :members:
 
@@ -52,7 +54,7 @@ In case of an error, VHS raises a :class:`VhsError` or its subclass:
 
 By default, the :func:`resolve` function silently detects or installs VHS,
 without printing anything (it may emit warning log messages
-to the ``'vhs'`` logger).
+to the ``"vhs"`` logger).
 
 You can display installation progress by passing a :class:`ProgressReporter`.
 Specifically, there's :class:`DefaultProgressReporter` which will cover
@@ -64,6 +66,7 @@ most basic cases:
 .. autoclass:: DefaultProgressReporter
 
 """
+
 import datetime
 import logging
 import os
@@ -359,7 +362,7 @@ class DefaultProgressReporter(ProgressReporter):
 
 def resolve(
     *,
-    cache_path: _t.Optional[pathlib.Path] = None,
+    cache_path: _t.Optional[_PathLike] = None,
     min_version: str = "0.5.0",
     quiet: bool = True,
     env: _t.Optional[_t.Dict[str, str]] = None,
@@ -409,7 +412,7 @@ def resolve(
     """
 
     if cache_path is None:
-        cache_path = pathlib.Path(tempfile.gettempdir()) / "python_vhs_cache"
+        cache_path = default_cache_path()
     else:
         cache_path = pathlib.Path(cache_path)
 
@@ -433,6 +436,17 @@ def resolve(
         _env=env,
         _cwd=cwd,
     )
+
+
+def default_cache_path() -> pathlib.Path:
+    """
+    Return default path where VHS binaries should be downloaded to.
+
+    Currently it is equal to ``pathlib.Path(tempfile.gettempdir()) / "python_vhs_cache"``.
+
+    """
+
+    return pathlib.Path(tempfile.gettempdir()) / "python_vhs_cache"
 
 
 def _get_path(env: _t.Optional[_t.Dict[str, str]]) -> str:
