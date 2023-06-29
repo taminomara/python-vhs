@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Python VHS &mdash; Python VHS 0.0.2 documentation</title>
+  <title>Python VHS &mdash; Python VHS 0.0.3 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -33,7 +33,7 @@
             Python VHS
           </a>
               <div class="version">
-                0.0.2
+                0.0.3
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -49,6 +49,7 @@
 <li><a class="reference internal" href="#quickstart">Quickstart</a></li>
 <li><a class="reference internal" href="#reference">Reference</a><ul>
 <li><a class="reference internal" href="#vhs.resolve"><code class="docutils literal notranslate"><span class="pre">resolve()</span></code></a></li>
+<li><a class="reference internal" href="#vhs.default_cache_path"><code class="docutils literal notranslate"><span class="pre">default_cache_path()</span></code></a></li>
 <li><a class="reference internal" href="#vhs.Vhs"><code class="docutils literal notranslate"><span class="pre">Vhs</span></code></a><ul>
 <li><a class="reference internal" href="#vhs.Vhs.run"><code class="docutils literal notranslate"><span class="pre">Vhs.run()</span></code></a></li>
 <li><a class="reference internal" href="#vhs.Vhs.run_inline"><code class="docutils literal notranslate"><span class="pre">Vhs.run_inline()</span></code></a></li>
@@ -111,7 +112,7 @@ Python-VHS can download necessary binaries from GitHub.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">vhs</span>
 
 <span class="n">vhs_runner</span> <span class="o">=</span> <span class="n">vhs</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
-<span class="n">vhs_runner</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s1">&#39;./example.tape&#39;</span><span class="p">,</span> <span class="s1">&#39;./example.gif&#39;</span><span class="p">)</span>
+<span class="n">vhs_runner</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">&quot;./example.tape&quot;</span><span class="p">,</span> <span class="s2">&quot;./example.gif&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -123,7 +124,7 @@ a new one if necessary, and returns a <a class="reference internal" href="#vhs.V
 through which you can invoke the found VHS binary:</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="vhs.resolve">
-<span class="sig-prename descclassname"><span class="pre">vhs.</span></span><span class="sig-name descname"><span class="pre">resolve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache_path:</span> <span class="pre">~pathlib.Path</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_version:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'0.5.0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quiet:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">env:</span> <span class="pre">~typing.Dict[str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">str]</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cwd:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">~os.PathLike</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">install:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reporter:</span> <span class="pre">~vhs.ProgressReporter</span> <span class="pre">=</span> <span class="pre">&lt;vhs.ProgressReporter</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retry:</span> <span class="pre">~urllib3.util.retry.Retry</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#vhs.Vhs" title="vhs.Vhs"><span class="pre">Vhs</span></a></span></span><a class="reference internal" href="_modules/vhs.html#resolve"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vhs.resolve" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">vhs.</span></span><span class="sig-name descname"><span class="pre">resolve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache_path:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">~os.PathLike</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_version:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'0.5.0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quiet:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">env:</span> <span class="pre">~typing.Dict[str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">str]</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cwd:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">~os.PathLike</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">install:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reporter:</span> <span class="pre">~vhs.ProgressReporter</span> <span class="pre">=</span> <span class="pre">&lt;vhs.ProgressReporter</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retry:</span> <span class="pre">~urllib3.util.retry.Retry</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#vhs.Vhs" title="vhs.Vhs"><span class="pre">Vhs</span></a></span></span><a class="reference internal" href="_modules/vhs.html#resolve"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vhs.resolve" title="Permalink to this definition"></a></dt>
 <dd><p>Find a system VHS installation or download VHS from GitHub.</p>
 <p>If VHS is not installed, or it’s outdated, try to download it
 and install it into <cite>cache_path</cite>.</p>
@@ -155,6 +156,13 @@ to avoid rate limiting.</p></li>
 <dd class="field-odd"><p><a class="reference internal" href="#vhs.VhsError" title="vhs.VhsError"><strong>VhsError</strong></a> – VHS not available or installation failed.</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="vhs.default_cache_path">
+<span class="sig-prename descclassname"><span class="pre">vhs.</span></span><span class="sig-name descname"><span class="pre">default_cache_path</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.11)"><span class="pre">Path</span></a></span></span><a class="reference internal" href="_modules/vhs.html#default_cache_path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#vhs.default_cache_path" title="Permalink to this definition"></a></dt>
+<dd><p>Return default path where VHS binaries should be downloaded to.</p>
+<p>Currently it is equal to <code class="docutils literal notranslate"><span class="pre">pathlib.Path(tempfile.gettempdir())</span> <span class="pre">/</span> <span class="pre">&quot;python_vhs_cache&quot;</span></code>.</p>
 </dd></dl>
 
 <dl class="py class">
@@ -221,7 +229,7 @@ By default, puts output to whichever path is set in the tape.</p></li>
 
 <p>By default, the <a class="reference internal" href="#vhs.resolve" title="vhs.resolve"><code class="xref py py-func docutils literal notranslate"><span class="pre">resolve()</span></code></a> function silently detects or installs VHS,
 without printing anything (it may emit warning log messages
-to the <code class="docutils literal notranslate"><span class="pre">'vhs'</span></code> logger).</p>
+to the <code class="docutils literal notranslate"><span class="pre">&quot;vhs&quot;</span></code> logger).</p>
 <p>You can display installation progress by passing a <a class="reference internal" href="#vhs.ProgressReporter" title="vhs.ProgressReporter"><code class="xref py py-class docutils literal notranslate"><span class="pre">ProgressReporter</span></code></a>.
 Specifically, there’s <a class="reference internal" href="#vhs.DefaultProgressReporter" title="vhs.DefaultProgressReporter"><code class="xref py py-class docutils literal notranslate"><span class="pre">DefaultProgressReporter</span></code></a> which will cover
 most basic cases:</p>
