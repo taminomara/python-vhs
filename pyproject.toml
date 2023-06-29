@@ -2,6 +2,7 @@
 name = "vhs"
 authors = [{name = "Tamika Nomara", email = "taminomara@gmail.com"}]
 description = "Write terminal GIFs as code for integration testing and demoing your CLI tools, now with python"
+dynamic = ["version"]
 readme = "README.md"
 license = {file = "LICENSE"}
 requires-python = ">=3.8"
@@ -18,7 +19,6 @@ classifiers = [
     "Intended Audience :: Developers",
     "Typing :: Typed",
 ]
-dynamic = ["version"]
 dependencies = [
     "PyGithub~=1.59.0",
     "requests~=2.31.0",
@@ -40,7 +40,6 @@ doc = [
 Documentation = "https://taminomara.github.io/python-vhs/"
 Issues = "https://github.com/taminomara/python-vhs/issues/"
 Source = "https://github.com/taminomara/python-vhs/"
-PyPi = "https://pypi.org/project/vhs/"
 Changelog = "https://github.com/taminomara/python-vhs/blob/main/CHANGELOG.md"
 
 [build-system]
