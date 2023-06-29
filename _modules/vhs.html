@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>vhs &mdash; Python VHS 0.0.1 documentation</title>
+  <title>vhs &mdash; Python VHS 0.0.2 documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -32,7 +32,7 @@
             Python VHS
           </a>
               <div class="version">
-                0.0.1
+                0.0.2
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
@@ -136,9 +136,6 @@
 
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">datetime</span>
-
-<span class="kn">import</span> <span class="nn">requests</span>
-<span class="kn">import</span> <span class="nn">requests.adapters</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">pathlib</span>
@@ -153,6 +150,8 @@
 <span class="kn">import</span> <span class="nn">typing</span> <span class="k">as</span> <span class="nn">_t</span>
 
 <span class="kn">import</span> <span class="nn">github</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">import</span> <span class="nn">requests.adapters</span>
 <span class="kn">import</span> <span class="nn">urllib3</span>
 
 <span class="n">_logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;vhs&quot;</span><span class="p">)</span>
@@ -378,7 +377,7 @@
 
 <span class="sd">        &quot;&quot;&quot;</span></div>
 
-<div class="viewcode-block" id="ProgressReporter.finish"><a class="viewcode-back" href="../index.html#vhs.ProgressReporter.finish">[docs]</a>    <span class="k">def</span> <span class="nf">finish</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="ProgressReporter.finish"><a class="viewcode-back" href="../index.html#vhs.ProgressReporter.finish">[docs]</a>    <span class="k">def</span> <span class="nf">finish</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_val</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Called when installation finishes.</span>
 
@@ -397,19 +396,35 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">stream</span> <span class="o">=</span> <span class="n">stream</span> <span class="ow">or</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span>
 
     <span class="k">def</span> <span class="nf">progress</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">desc</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">dl_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">total_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">speed</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="o">/</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">total_size</span><span class="p">:</span>
-            <span class="n">dl_size_mb</span> <span class="o">=</span> <span class="n">dl_size</span> <span class="o">/</span> <span class="mi">1024</span><span class="o">**</span><span class="mi">2</span>
-            <span class="n">total_size_mb</span> <span class="o">=</span> <span class="n">total_size</span> <span class="o">/</span> <span class="mi">1024</span><span class="o">**</span><span class="mi">2</span>
-            <span class="n">speed_mb</span> <span class="o">=</span> <span class="n">speed</span> <span class="o">/</span> <span class="mi">1024</span><span class="o">**</span><span class="mi">2</span>
-            <span class="n">desc</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;: </span><span class="si">{</span><span class="n">dl_size_mb</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">total_size_mb</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">MB - </span><span class="si">{</span><span class="n">speed_mb</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">MB/s&quot;</span>
+        <span class="n">desc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_desc</span><span class="p">(</span><span class="n">desc</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">desc</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_prev_len</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\r</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">total_size</span><span class="p">:</span>
+            <span class="n">desc</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_progress</span><span class="p">(</span><span class="n">dl_size</span><span class="p">,</span> <span class="n">total_size</span><span class="p">,</span> <span class="n">speed</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">desc</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_prev_len</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\r</span><span class="s2">&quot;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_prev_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">desc</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">finish</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;vhs installed</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">finish</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_val</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">exc_val</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">progress</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;vhs installation failed: </span><span class="si">{</span><span class="n">exc_val</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prev_len</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">progress</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;vhs installed&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">format_desc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">desc</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">desc</span>
+
+    <span class="k">def</span> <span class="nf">format_progress</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dl_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">total_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">speed</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">dl_size_mb</span> <span class="o">=</span> <span class="n">dl_size</span> <span class="o">/</span> <span class="mi">1024</span><span class="o">**</span><span class="mi">2</span>
+        <span class="n">total_size_mb</span> <span class="o">=</span> <span class="n">total_size</span> <span class="o">/</span> <span class="mi">1024</span><span class="o">**</span><span class="mi">2</span>
+        <span class="n">speed_mb</span> <span class="o">=</span> <span class="n">speed</span> <span class="o">/</span> <span class="mi">1024</span><span class="o">**</span><span class="mi">2</span>
+
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;: </span><span class="si">{</span><span class="n">dl_size_mb</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">total_size_mb</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">MB - </span><span class="si">{</span><span class="n">speed_mb</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">MB/s&quot;</span>
+
+    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span></div>
 
 
@@ -469,6 +484,8 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="n">cache_path</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">cache_path</span><span class="p">)</span>
 
+    <span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;using vhs cache path: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">cache_path</span><span class="p">)</span>
+
     <span class="k">if</span> <span class="n">retry</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">retry</span> <span class="o">=</span> <span class="n">urllib3</span><span class="o">.</span><span class="n">Retry</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">backoff_factor</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
 
@@ -478,7 +495,7 @@
             <span class="n">min_version</span><span class="p">,</span> <span class="n">cache_path</span><span class="p">,</span> <span class="n">_get_path</span><span class="p">(</span><span class="n">env</span><span class="p">),</span> <span class="n">install</span><span class="p">,</span> <span class="n">reporter</span><span class="p">,</span> <span class="n">timeout</span><span class="p">,</span> <span class="n">retry</span>
         <span class="p">)</span>
     <span class="k">finally</span><span class="p">:</span>
-        <span class="n">reporter</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span>
+        <span class="n">reporter</span><span class="o">.</span><span class="n">finish</span><span class="p">(</span><span class="o">*</span><span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">())</span>
 
     <span class="k">return</span> <span class="n">Vhs</span><span class="p">(</span>
         <span class="n">_vhs_path</span><span class="o">=</span><span class="n">vhs_path</span><span class="p">,</span>
@@ -523,8 +540,12 @@
         <span class="k">if</span> <span class="n">release</span><span class="o">.</span><span class="n">draft</span> <span class="ow">or</span> <span class="n">release</span><span class="o">.</span><span class="n">prerelease</span><span class="p">:</span>
             <span class="k">continue</span>
 
+        <span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;found </span><span class="si">%s</span><span class="s2"> release </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">release</span><span class="o">.</span><span class="n">tag_name</span><span class="p">)</span>
+
         <span class="k">for</span> <span class="n">asset</span> <span class="ow">in</span> <span class="n">release</span><span class="o">.</span><span class="n">assets</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">filter</span><span class="p">(</span><span class="n">asset</span><span class="o">.</span><span class="n">name</span><span class="p">):</span>
+                <span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;found </span><span class="si">%s</span><span class="s2"> asset </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">asset</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="n">basename</span> <span class="o">=</span> <span class="n">asset</span><span class="o">.</span><span class="n">name</span>
                 <span class="n">browser_download_url</span> <span class="o">=</span> <span class="n">asset</span><span class="o">.</span><span class="n">browser_download_url</span>
                 <span class="k">break</span>
         <span class="k">else</span><span class="p">:</span>
@@ -534,7 +555,7 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">VhsError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;unable to find latest </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> release&quot;</span><span class="p">)</span>
 
-    <span class="n">basename</span> <span class="o">=</span> <span class="n">browser_download_url</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="n">maxsplit</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;downloading </span><span class="si">%s</span><span class="s2"> from </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">browser_download_url</span><span class="p">)</span>
 
     <span class="k">with</span> <span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
         <span class="n">adapter</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">adapters</span><span class="o">.</span><span class="n">HTTPAdapter</span><span class="p">(</span><span class="n">max_retries</span><span class="o">=</span><span class="n">retry</span><span class="p">)</span>
@@ -598,10 +619,14 @@
 
             <span class="n">reporter</span><span class="o">.</span><span class="n">progress</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;processing vhs&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
 
+            <span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;unpacking vhs&quot;</span><span class="p">)</span>
+
             <span class="n">shutil</span><span class="o">.</span><span class="n">unpack_archive</span><span class="p">(</span><span class="n">tmp_file</span><span class="p">,</span> <span class="n">tmp_dir</span><span class="p">)</span>
 
             <span class="n">src</span> <span class="o">=</span> <span class="n">tmp_dir</span> <span class="o">/</span> <span class="s2">&quot;vhs&quot;</span>
             <span class="n">dst</span> <span class="o">=</span> <span class="n">bin_path</span> <span class="o">/</span> <span class="s2">&quot;vhs&quot;</span>
+
+            <span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;copying </span><span class="si">%s</span><span class="s2"> -&gt; </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">)</span>
 
             <span class="n">os</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">)</span>
             <span class="n">dst</span><span class="o">.</span><span class="n">chmod</span><span class="p">(</span><span class="n">dst</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_mode</span> <span class="o">|</span> <span class="n">stat</span><span class="o">.</span><span class="n">S_IEXEC</span><span class="p">)</span>
@@ -629,6 +654,8 @@
             <span class="n">reporter</span><span class="o">.</span><span class="n">progress</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;processing ttyd&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
 
             <span class="n">dst</span> <span class="o">=</span> <span class="n">bin_path</span> <span class="o">/</span> <span class="s2">&quot;ttyd&quot;</span>
+
+            <span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;copying </span><span class="si">%s</span><span class="s2"> -&gt; </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">tmp_file</span><span class="p">,</span> <span class="n">dst</span><span class="p">)</span>
 
             <span class="n">os</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tmp_file</span><span class="p">,</span> <span class="n">dst</span><span class="p">)</span>
             <span class="n">dst</span><span class="o">.</span><span class="n">chmod</span><span class="p">(</span><span class="n">dst</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_mode</span> <span class="o">|</span> <span class="n">stat</span><span class="o">.</span><span class="n">S_IEXEC</span><span class="p">)</span>
@@ -670,10 +697,14 @@
             <span class="k">elif</span> <span class="n">archive_basename</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.tar.xz&quot;</span><span class="p">):</span>
                 <span class="n">archive_basename</span> <span class="o">=</span> <span class="n">archive_basename</span><span class="p">[:</span> <span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="s2">&quot;.tar.xz&quot;</span><span class="p">)]</span>
 
+            <span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;unpacking ffmpeg&quot;</span><span class="p">)</span>
+
             <span class="n">shutil</span><span class="o">.</span><span class="n">unpack_archive</span><span class="p">(</span><span class="n">tmp_file</span><span class="p">,</span> <span class="n">tmp_dir</span><span class="p">)</span>
 
             <span class="k">for</span> <span class="n">src</span> <span class="ow">in</span> <span class="p">(</span><span class="n">tmp_dir</span> <span class="o">/</span> <span class="n">archive_basename</span> <span class="o">/</span> <span class="s2">&quot;bin&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">iterdir</span><span class="p">():</span>
                 <span class="n">dst</span> <span class="o">=</span> <span class="n">bin_path</span> <span class="o">/</span> <span class="n">src</span><span class="o">.</span><span class="n">name</span>
+
+                <span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;copying </span><span class="si">%s</span><span class="s2"> -&gt; </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">)</span>
 
                 <span class="n">os</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">)</span>
                 <span class="n">dst</span><span class="o">.</span><span class="n">chmod</span><span class="p">(</span><span class="n">dst</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_mode</span> <span class="o">|</span> <span class="n">stat</span><span class="o">.</span><span class="n">S_IEXEC</span><span class="p">)</span>
