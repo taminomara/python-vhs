@@ -65,9 +65,6 @@ most basic cases:
 
 """
 import datetime
-
-import requests
-import requests.adapters
 import logging
 import os
 import pathlib
@@ -82,6 +79,8 @@ import tempfile
 import typing as _t
 
 import github
+import requests
+import requests.adapters
 import urllib3
 
 _logger = logging.getLogger("vhs")

@@ -1,6 +1,6 @@
 import sys
-import pytest
 
+import pytest
 
 ALL = set("darwin linux win32".split())
 

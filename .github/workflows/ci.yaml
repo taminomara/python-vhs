@@ -50,7 +50,9 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install '.[test]'
       - name: Check codestyle
-        run: black --check .
+        run: |
+          black --check .
+          isort --check --diff .
       - run: |
           echo 'Type "true"' > _empty_vhs_tape.tape
       - name: Install VHS
