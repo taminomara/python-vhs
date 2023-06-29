@@ -307,7 +307,7 @@ class ProgressReporter:
 
         """
 
-    def finish(self):
+    def finish(self, exc_type, exc_val, exc_tb):
         """
         Called when installation finishes.
 
@@ -326,19 +326,35 @@ class DefaultProgressReporter(ProgressReporter):
         self.stream = stream or sys.stderr
 
     def progress(self, desc: str, dl_size: int, total_size: int, speed: float, /):
-        if total_size:
-            dl_size_mb = dl_size / 1024**2
-            total_size_mb = total_size / 1024**2
-            speed_mb = speed / 1024**2
-            desc += f": {dl_size_mb:.1f}/{total_size_mb:.1f}MB - {speed_mb:.2f}MB/s"
+        desc = self.format_desc(desc)
 
-        self.stream.write(desc.ljust(self._prev_len) + "\r")
-        self.stream.flush()
+        if total_size:
+            desc += self.format_progress(dl_size, total_size, speed)
+
+        self.write(desc.ljust(self._prev_len) + "\r")
 
         self._prev_len = len(desc)
 
-    def finish(self):
-        self.stream.write(f"vhs installed\n")
+    def finish(self, exc_type, exc_val, exc_tb):
+        if exc_val:
+            self.progress(f"vhs installation failed: {exc_val}", 0, 0, 0)
+            self.write("\n")
+        elif self._prev_len > 0:
+            self.progress(f"vhs installed", 0, 0, 0)
+            self.write("\n")
+
+    def format_desc(self, desc: str) -> str:
+        return desc
+
+    def format_progress(self, dl_size: int, total_size: int, speed: float) -> str:
+        dl_size_mb = dl_size / 1024**2
+        total_size_mb = total_size / 1024**2
+        speed_mb = speed / 1024**2
+
+        return f": {dl_size_mb:.1f}/{total_size_mb:.1f}MB - {speed_mb:.2f}MB/s"
+
+    def write(self, msg: str):
+        self.stream.write(msg)
         self.stream.flush()
 
 
@@ -398,6 +414,8 @@ def resolve(
     else:
         cache_path = pathlib.Path(cache_path)
 
+    _logger.debug("using vhs cache path: %s", cache_path)
+
     if retry is None:
         retry = urllib3.Retry(10, backoff_factor=0.1)
 
@@ -407,7 +425,7 @@ def resolve(
             min_version, cache_path, _get_path(env), install, reporter, timeout, retry
         )
     finally:
-        reporter.finish()
+        reporter.finish(*sys.exc_info())
 
     return Vhs(
         _vhs_path=vhs_path,
@@ -452,8 +470,12 @@ def _download_latest_release(
         if release.draft or release.prerelease:
             continue
 
+        _logger.debug("found %s release %s", name, release.tag_name)
+
         for asset in release.assets:
             if filter(asset.name):
+                _logger.debug("found %s asset %s", name, asset.name)
+                basename = asset.name
                 browser_download_url = asset.browser_download_url
                 break
         else:
@@ -463,7 +485,7 @@ def _download_latest_release(
     else:
         raise VhsError(f"unable to find latest {name} release")
 
-    basename = browser_download_url.rstrip("/").rsplit("/", maxsplit=1)[1]
+    _logger.debug("downloading %s from %s", name, browser_download_url)
 
     with requests.Session() as session:
         adapter = requests.adapters.HTTPAdapter(max_retries=retry)
@@ -527,10 +549,14 @@ def _install_vhs(
 
             reporter.progress(f"processing vhs", 0, 0, 0)
 
+            _logger.debug("unpacking vhs")
+
             shutil.unpack_archive(tmp_file, tmp_dir)
 
             src = tmp_dir / "vhs"
             dst = bin_path / "vhs"
+
+            _logger.debug("copying %s -> %s", src, dst)
 
             os.replace(src, dst)
             dst.chmod(dst.stat().st_mode | stat.S_IEXEC)
@@ -558,6 +584,8 @@ def _install_ttyd(
             reporter.progress(f"processing ttyd", 0, 0, 0)
 
             dst = bin_path / "ttyd"
+
+            _logger.debug("copying %s -> %s", tmp_file, dst)
 
             os.replace(tmp_file, dst)
             dst.chmod(dst.stat().st_mode | stat.S_IEXEC)
@@ -599,10 +627,14 @@ def _install_ffmpeg(
             elif archive_basename.endswith(".tar.xz"):
                 archive_basename = archive_basename[: -len(".tar.xz")]
 
+            _logger.debug("unpacking ffmpeg")
+
             shutil.unpack_archive(tmp_file, tmp_dir)
 
             for src in (tmp_dir / archive_basename / "bin").iterdir():
                 dst = bin_path / src.name
+
+                _logger.debug("copying %s -> %s", src, dst)
 
                 os.replace(src, dst)
                 dst.chmod(dst.stat().st_mode | stat.S_IEXEC)
