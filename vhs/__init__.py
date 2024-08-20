@@ -486,6 +486,7 @@ def _download_latest_release(
         _logger.debug("found %s release %s", name, release.tag_name)
 
         for asset in release.assets:
+            _logger.debug("trying %s asset %s", name, asset.name)
             if filter(asset.name):
                 _logger.debug("found %s asset %s", name, asset.name)
                 basename = asset.name
@@ -543,7 +544,7 @@ def _install_vhs(
     bin_path: pathlib.Path,
     reporter: ProgressReporter,
 ):
-    filter = lambda name: name == "vhs_Linux_x86_64.tar.gz"
+    filter = lambda name: name.endswith("Linux_x86_64.tar.gz")
 
     with tempfile.TemporaryDirectory() as tmp_dir_s:
         tmp_dir = pathlib.Path(tmp_dir_s)
@@ -566,7 +567,15 @@ def _install_vhs(
 
             shutil.unpack_archive(tmp_file, tmp_dir)
 
-            src = tmp_dir / "vhs"
+            archive_basename = tmp_file.name
+            if archive_basename.endswith(".zip"):
+                archive_basename = archive_basename[: -len(".zip")]
+            elif archive_basename.endswith(".tar.gz"):
+                archive_basename = archive_basename[: -len(".tar.gz")]
+            elif archive_basename.endswith(".tar.xz"):
+                archive_basename = archive_basename[: -len(".tar.xz")]
+
+            src = tmp_dir / archive_basename / "vhs"
             dst = bin_path / "vhs"
 
             _logger.debug("copying %s -> %s", src, dst)
