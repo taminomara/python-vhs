@@ -55,7 +55,7 @@ jobs:
       - run: |
           echo 'Type "true"' > _empty_vhs_tape.tape
       - name: Install VHS
-        uses: charmbracelet/vhs-action@v1
+        uses: charmbracelet/vhs-action@v2
         with:
           path: _empty_vhs_tape.tape
       - name: Test package
