@@ -4,7 +4,7 @@ authors = [{ name = "Tamika Nomara", email = "taminomara@gmail.com" }]
 description = "Write terminal GIFs as code for integration testing and demoing your CLI tools, now with python"
 dynamic = ["version"]
 readme = "README.md"
-license = { file = "LICENSE" }
+license = "MIT"
 requires-python = ">=3.11"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
