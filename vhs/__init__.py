@@ -17,11 +17,13 @@ Quickstart
 
 Install VHS:
 
-.. code-block:: sh
+.. code-block:: console
 
-    pip3 install vhs
+    $ pip install vhs
 
 Then resolve VHS binary and run it:
+
+.. skip: next
 
 .. code-block:: python
 
@@ -69,6 +71,7 @@ most basic cases:
 
 import datetime
 import logging
+import math
 import os
 import pathlib
 import platform
@@ -82,20 +85,14 @@ import tempfile
 import typing as _t
 
 import github
+import github.Repository
 import requests
 import requests.adapters
 import urllib3
 
 _logger = logging.getLogger("vhs")
 
-try:
-    from vhs._version import __version__, __version_tuple__
-except ImportError:
-    raise ImportError(
-        "vhs._version not found. if you are developing locally, "
-        "run `pip install -e .[test,doc]` to generate it"
-    )
-
+from vhs._version import *
 
 __all__ = [
     "VhsError",
@@ -107,7 +104,7 @@ __all__ = [
 ]
 
 
-_PathLike = _t.Union[str, os.PathLike]
+_PathLike = _t.Union[str, os.PathLike[str]]
 
 
 class VhsError(Exception):
@@ -188,11 +185,11 @@ class Vhs:
             path to the output file.
             By default, puts output to whichever path is set in the tape.
         :param quiet:
-            redefine `quiet` for this invocation. (see :func:`resolve`).
+            redefine ``quiet`` for this invocation. (see :func:`resolve`).
         :param env:
-            redefine `env` for this invocation. (see :func:`resolve`).
+            redefine ``env`` for this invocation. (see :func:`resolve`).
         :param cwd:
-            redefine `cmd` for this invocation. (see :func:`resolve`).
+            redefine ``cmd`` for this invocation. (see :func:`resolve`).
 
         :raises VhsRunError: VHS process failed with non-zero return code.
 
@@ -256,11 +253,11 @@ class Vhs:
             path to the output file.
             By default, puts output to whichever path is set in the tape.
         :param quiet:
-            redefine `quiet` for this invocation (see :func:`resolve`).
+            redefine ``quiet`` for this invocation (see :func:`resolve`).
         :param env:
-            redefine `env` for this invocation (see :func:`resolve`).
+            redefine ``env`` for this invocation (see :func:`resolve`).
         :param cwd:
-            redefine `cmd` for this invocation (see :func:`resolve`).
+            redefine ``cmd`` for this invocation (see :func:`resolve`).
 
         :raises VhsRunError: VHS process failed with non-zero return code.
 
@@ -362,8 +359,9 @@ class DefaultProgressReporter(ProgressReporter):
 
 def resolve(
     *,
-    cache_path: _t.Optional[_PathLike] = None,
     min_version: str = "0.5.0",
+    max_version: str | None = None,
+    cache_path: _t.Optional[_PathLike] = None,
     quiet: bool = True,
     env: _t.Optional[_t.Dict[str, str]] = None,
     cwd: _t.Optional[_PathLike] = None,
@@ -371,21 +369,24 @@ def resolve(
     reporter: ProgressReporter = ProgressReporter(),
     timeout: int = 15,
     retry: _t.Optional[urllib3.Retry] = None,
+    auth: github.Auth.Auth | None = None,
 ) -> "Vhs":
     """
     Find a system VHS installation or download VHS from GitHub.
 
     If VHS is not installed, or it's outdated, try to download it
-    and install it into `cache_path`.
+    and install it into ``cache_path``.
 
     Automatic download only works on 64-bit Linux.
-    MacOS users will be presented with an instruction to use `brew`,
+    MacOS users will be presented with an instruction to use ``brew``,
     and other systems users will get a link to VHS installation guide.
 
     :param cache_path:
         path where VHS binaries should be downloaded to.
     :param min_version:
         minimal VHS version required.
+    :param max_version:
+        maximal VHS version required. Version is not limited is `None`.
     :param quiet:
         if true (default), any output from the VHS binary is hidden.
     :param env:
@@ -404,6 +405,9 @@ def resolve(
         retry policy for reading from GitHub and downloading releases.
         The default retry polity uses exponential backoff
         to avoid rate limiting.
+    :param auth:
+        authentication method for downloading releases from GitHub.
+        If set to `None`, requests to GitHub's API will be rate limited.
     :return:
         resolved VHS installation.
     :raises VhsError:
@@ -415,6 +419,7 @@ def resolve(
         cache_path = default_cache_path()
     else:
         cache_path = pathlib.Path(cache_path)
+    cache_path = cache_path.expanduser().resolve()
 
     _logger.debug("using vhs cache path: %s", cache_path)
 
@@ -424,7 +429,15 @@ def resolve(
     reporter.start()
     try:
         vhs_path, path = _check_and_install(
-            min_version, cache_path, _get_path(env), install, reporter, timeout, retry
+            min_version,
+            max_version,
+            cache_path,
+            _get_path(env),
+            install,
+            reporter,
+            timeout,
+            retry,
+            auth,
         )
     finally:
         reporter.finish(*sys.exc_info())
@@ -446,7 +459,10 @@ def default_cache_path() -> pathlib.Path:
 
     """
 
-    return pathlib.Path(tempfile.gettempdir()) / "python_vhs_cache"
+    if path := os.environ.get("PYTHON_VHS_CACHE_PATH", None):
+        return pathlib.Path(path)
+    else:
+        return pathlib.Path(tempfile.gettempdir()) / "python_vhs_cache"
 
 
 def _get_path(env: _t.Optional[_t.Dict[str, str]]) -> str:
@@ -455,17 +471,74 @@ def _get_path(env: _t.Optional[_t.Dict[str, str]]) -> str:
         path = os.environ.get("PATH", None)
     if path is None:
         try:
-            path = os.confstr("CS_PATH")  # type: ignore
+            path = os.confstr("CS_PATH")
         except (AttributeError, ValueError):
             pass
     if path is None:
-        path = os.defpath
-    if path is None:
-        path = ""
+        path = os.defpath or ""
     return path
 
 
-def _download_latest_release(
+def _check_version(
+    min_version: str, max_version: str | None, bin_path: _PathLike
+) -> _t.Tuple[bool, _t.Optional[str]]:
+    min_version_tuple = tuple(int(c) for c in min_version.split("."))
+    if max_version:
+        max_version_tuple = tuple(int(c) for c in max_version.split("."))
+        if max_version_tuple <= min_version_tuple:
+            raise VhsError(
+                "lua_ls_min_version is greater or equal to lua_ls_max_version: "
+                f"{min_version} > {max_version}"
+            )
+    else:
+        max_version_tuple = (math.inf,)
+    try:
+        _logger.debug("checking version of %a", bin_path)
+        system_version_text_b = subprocess.check_output([bin_path, "--version"])
+        system_version_text = system_version_text_b.decode().strip()
+        if match := re.search(r"(\d+\.\d+\.\d+)", system_version_text):
+            system_version = match.group(1)
+            system_version_tuple = tuple(int(c) for c in system_version.split("."))
+            if min_version_tuple <= system_version_tuple < max_version_tuple:
+                return True, system_version
+            else:
+                _logger.debug(
+                    "%s is outdated (got %s, required %s..%s)",
+                    bin_path,
+                    system_version,
+                    min_version,
+                    max_version,
+                )
+                return False, system_version
+        else:
+            _logger.debug(
+                "%s printed invalid version %r", bin_path, system_version_text
+            )
+            return False, system_version_text
+    except (subprocess.SubprocessError, OSError, UnicodeDecodeError):
+        _logger.debug("%s failed to print its version", bin_path, exc_info=True)
+
+    return False, None
+
+
+def _make_version_message(min_version: str, max_version: str | None) -> str:
+    if max_version:
+        return f"a version between {min_version} and {max_version}"
+    else:
+        return f"version {min_version} or newer"
+
+
+def _get_repo(api: github.Github, repo_name: str):
+    return api.get_repo(repo_name)
+
+
+def _get_releases(repo: github.Repository.Repository):
+    return repo.get_releases()
+
+
+def _download_release(
+    min_version: str | None,
+    max_version: str | None,
     api: github.Github,
     timeout: int,
     retry: urllib3.Retry,
@@ -475,15 +548,37 @@ def _download_latest_release(
     filter: _t.Callable[[str], bool],
     reporter: ProgressReporter,
 ):
+    if min_version:
+        min_version_tuple = tuple(int(c) for c in min_version.split("."))
+    else:
+        min_version_tuple = None
+    if max_version:
+        max_version_tuple = tuple(int(c) for c in max_version.split("."))
+    else:
+        max_version_tuple = (math.inf,)
+
     reporter.progress(f"resolving {name}", 0, 0, 0)
 
-    repo = api.get_repo(repo_name)
+    repo = _get_repo(api, repo_name)
 
-    for release in repo.get_releases():
+    for release in _get_releases(repo):
         if release.draft or release.prerelease:
             continue
 
         _logger.debug("found %s release %s", name, release.tag_name)
+
+        if min_version_tuple:
+            if match := re.search(r"(\d+\.\d+\.\d+)", release.tag_name):
+                release_version = match.group(1)
+                release_version_tuple = tuple(
+                    int(c) for c in release_version.split(".")
+                )
+                if not (min_version_tuple <= release_version_tuple < max_version_tuple):
+                    _logger.debug("release is outside of allowed version range")
+                    continue
+            else:
+                _logger.debug("can't parse release tag")
+                continue
 
         for asset in release.assets:
             _logger.debug("trying %s asset %s", name, asset.name)
@@ -497,7 +592,11 @@ def _download_latest_release(
 
         break
     else:
-        raise VhsError(f"unable to find latest {name} release")
+        if min_version:
+            version = _make_version_message(min_version, max_version)
+            raise VhsError(f"unable to find {name} release for {version}")
+        else:
+            raise VhsError(f"unable to find latest {name} release")
 
     _logger.debug("downloading %s from %s", name, browser_download_url)
 
@@ -525,11 +624,9 @@ def _download_latest_release(
                     if size:
                         # note: this does not take content-encoding into account.
                         # our contents are not encoded, though, so this is fine.
+                        time = (datetime.datetime.now() - start).total_seconds()
                         downloaded += len(chunk)
-                        speed = (
-                            downloaded
-                            / (datetime.datetime.now() - start).total_seconds()
-                        )
+                        speed = downloaded / time if time else 0
                         reporter.progress(
                             f"downloading {name}", downloaded, size, speed
                         )
@@ -538,6 +635,8 @@ def _download_latest_release(
 
 
 def _install_vhs(
+    min_version: str,
+    max_version: str | None,
     api: github.Github,
     timeout: int,
     retry: urllib3.Retry,
@@ -550,7 +649,9 @@ def _install_vhs(
         tmp_dir = pathlib.Path(tmp_dir_s)
 
         try:
-            tmp_file = _download_latest_release(
+            tmp_file = _download_release(
+                min_version,
+                max_version,
                 api,
                 timeout,
                 retry,
@@ -599,8 +700,17 @@ def _install_ttyd(
         tmp_dir = pathlib.Path(tmp_dir_s)
 
         try:
-            tmp_file = _download_latest_release(
-                api, timeout, retry, "ttyd", "tsl0922/ttyd", tmp_dir, filter, reporter
+            tmp_file = _download_release(
+                None,
+                None,
+                api,
+                timeout,
+                retry,
+                "ttyd",
+                "tsl0922/ttyd",
+                tmp_dir,
+                filter,
+                reporter,
             )
 
             reporter.progress(f"processing ttyd", 0, 0, 0)
@@ -622,13 +732,15 @@ def _install_ffmpeg(
     bin_path: pathlib.Path,
     reporter: ProgressReporter,
 ):
-    filter = lambda name: name.startswith("ffmpeg-n5.1") and "linux64-gpl-5.1" in name
+    filter = lambda name: name.startswith("ffmpeg-n") and "linux64-gpl-" in name
 
     with tempfile.TemporaryDirectory() as tmp_dir_s:
         tmp_dir = pathlib.Path(tmp_dir_s)
 
         try:
-            tmp_file = _download_latest_release(
+            tmp_file = _download_release(
+                None,
+                None,
                 api,
                 timeout,
                 retry,
@@ -665,53 +777,29 @@ def _install_ffmpeg(
             raise VhsError(f"ffmpeg install failed: {e}")
 
 
-def _check_version(
-    version: str, vhs_path: _PathLike
-) -> _t.Tuple[bool, _t.Optional[str]]:
-    version_tuple = tuple(int(c) for c in version.split("."))
-    try:
-        system_version_text_b = subprocess.check_output([vhs_path, "--version"])
-        system_version_text = system_version_text_b.decode().strip()
-        if match := re.search(r"(\d+\.\d+\.\d+)", system_version_text):
-            system_version = match.group(1)
-            system_version_tuple = tuple(int(c) for c in system_version.split("."))
-            if system_version_tuple >= version_tuple:
-                return True, system_version
-            else:
-                _logger.debug(
-                    "%s is outdated (got %s, required %s)",
-                    vhs_path,
-                    system_version,
-                    version,
-                )
-                return False, system_version
-        else:
-            _logger.debug(
-                "%s printed invalid version %r", vhs_path, system_version_text
-            )
-    except (subprocess.SubprocessError, OSError, UnicodeDecodeError):
-        _logger.debug("%s failed to print its version", vhs_path, exc_info=True)
-
-    return False, None
-
-
 def _check_and_install(
-    version: str,
+    min_version: str,
+    max_version: str | None,
     bin_path: pathlib.Path,
     path: str,
     install: bool,
     reporter: ProgressReporter,
     timeout: int,
     retry: urllib3.Retry,
+    auth: github.Auth.Auth | None,
 ) -> _t.Tuple[pathlib.Path, str]:
-    if version.startswith("v"):
-        version = version[1:]
+    if min_version.startswith("v"):
+        min_version = min_version[1:]
+    if max_version is not None and max_version.startswith("v"):
+        max_version = max_version[1:]
 
     # Try finding pre-installed vhs.
     system_vhs_path = shutil.which("vhs", path=path)
     system_version = None
     if system_vhs_path:
-        can_use_system_vhs, system_version = _check_version(version, system_vhs_path)
+        can_use_system_vhs, system_version = _check_version(
+            min_version, max_version, system_vhs_path
+        )
         if can_use_system_vhs:
             _logger.debug("using pre-installed vhs at %s", system_vhs_path)
             return pathlib.Path(system_vhs_path), path
@@ -751,7 +839,7 @@ def _check_and_install(
             )
 
     # Download binary releases or use cached ones.
-    api = github.Github(retry=retry, timeout=timeout)
+    api = github.Github(retry=retry, timeout=timeout, auth=auth)
 
     bin_path.mkdir(parents=True, exist_ok=True)
 
@@ -774,14 +862,14 @@ def _check_and_install(
 
     vhs_path = bin_path / "vhs"
     if vhs_path.exists():
-        can_use_cached_vhs, _ = _check_version(version, vhs_path)
+        can_use_cached_vhs, _ = _check_version(min_version, max_version, vhs_path)
         if can_use_cached_vhs:
             _logger.debug("using cached vhs")
             return vhs_path, path
 
-    _install_vhs(api, timeout, retry, bin_path, reporter)
+    _install_vhs(min_version, max_version, api, timeout, retry, bin_path, reporter)
 
-    can_use_cached_vhs, _ = _check_version(version, vhs_path)
+    can_use_cached_vhs, _ = _check_version(min_version, max_version, vhs_path)
     if not can_use_cached_vhs:
         _logger.warning(
             "downloaded latest vhs is outdated; "

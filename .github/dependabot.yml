@@ -1,0 +1,26 @@
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      dev:
+        patterns:
+        - "furo"
+        - "pyright"
+        - "pytest-cov"
+        - "pytest-image-diff"
+        - "pytest"
+        - "reportlab"
+        - "sphinx_design"
+        - "svglib"
+        - "sybil"
+        - "pytest-regressions"
+        - "beautifulsoup4"
+        - "sphinxcontrib-svg2pdfconverter"
+      style:
+        patterns:
+        - "black"
+        - "isort"
+        - "pre-commit"

@@ -1,12 +1,19 @@
+# pyright: reportPrivateUsage=false
+
+import functools
 import logging
 import os
 import pathlib
 import shutil
 import sys
 
+import github
 import pytest
 
 import vhs
+
+vhs._get_repo = functools.lru_cache()(vhs._get_repo)
+vhs._get_releases = functools.lru_cache()(vhs._get_releases)
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -14,11 +21,20 @@ def setup_logging():
     vhs._logger.setLevel(logging.DEBUG)
 
 
-def test_system_vhs(tmpdir):
+@pytest.fixture(scope="session")
+def auth():
+    if "VHS_TEST_GH_LOGIN" in os.environ and "VHS_TEST_GH_PASS" in os.environ:
+        return github.Auth.Login(
+            os.environ["VHS_TEST_GH_LOGIN"].strip(),
+            os.environ["VHS_TEST_GH_PASS"].strip(),
+        )
+
+
+def test_system_vhs(tmpdir, auth):
     system_vhs = shutil.which("vhs")
     assert system_vhs is not None, "vhs should be installed on your system to run tests"
 
-    detected_vhs = vhs.resolve(cache_path=tmpdir)
+    detected_vhs = vhs.resolve(cache_path=tmpdir, auth=auth)
     assert detected_vhs._vhs_path == pathlib.Path(system_vhs)
 
     _do_vhs_test(
@@ -31,8 +47,8 @@ def test_system_vhs(tmpdir):
 
 
 @pytest.mark.linux
-def test_system_vhs_unavailable(tmpdir):
-    detected_vhs = vhs.resolve(cache_path=tmpdir, env={"PATH": os.defpath})
+def test_system_vhs_unavailable(tmpdir, auth):
+    detected_vhs = vhs.resolve(cache_path=tmpdir, env={"PATH": os.defpath}, auth=auth)
     assert detected_vhs._vhs_path == pathlib.Path(tmpdir) / "vhs"
     assert detected_vhs._path.startswith(str(tmpdir))
 
@@ -47,33 +63,19 @@ def test_system_vhs_unavailable(tmpdir):
 
 @pytest.mark.darwin
 @pytest.mark.win32
-def test_system_vhs_unavailable_fail(tmpdir):
+def test_system_vhs_unavailable_fail(tmpdir, auth):
     with pytest.raises(vhs.VhsError, match=r"VHS is not installed on your system"):
-        vhs.resolve(cache_path=tmpdir, env={"PATH": os.defpath})
+        vhs.resolve(cache_path=tmpdir, env={"PATH": os.defpath}, auth=auth)
 
 
 @pytest.mark.linux
-def test_system_vhs_outdated(tmpdir):
-    detected_vhs = vhs.resolve(cache_path=tmpdir, min_version="9999.0.0")
-    assert detected_vhs._vhs_path == pathlib.Path(tmpdir) / "vhs"
-    assert detected_vhs._path.startswith(str(tmpdir))
-
-    _do_vhs_test(
-        detected_vhs,
-        tmpdir,
-        tmpdir / "vhs",
-        tmpdir / "ttyd",
-        tmpdir / "ffmpeg",
-    )
-
-
 @pytest.mark.darwin
 @pytest.mark.win32
-def test_system_vhs_outdated_fail(tmpdir):
+def test_system_vhs_outdated_fail(tmpdir, auth):
     with pytest.raises(
-        vhs.VhsError, match=r"but version 9999.0.0 or newer is required"
+        vhs.VhsError, match=r"vhs release for version 9999.0.0 or newer"
     ):
-        vhs.resolve(cache_path=tmpdir, min_version="9999.0.0")
+        vhs.resolve(cache_path=tmpdir, min_version="9999.0.0", auth=auth)
 
 
 def _do_vhs_test(
@@ -136,10 +138,12 @@ def _run_inline(detected_vhs: vhs.Vhs, tape: str, tmpdir, **kwargs) -> str:
 
 
 @pytest.mark.parametrize("runner", [_run, _run_inline])
-def test_env(tmpdir, runner):
+def test_env(tmpdir, runner, auth):
     var_name = "%SOME_VAR%" if sys.platform == "win32" else "$SOME_VAR"
     res = runner(
-        vhs.resolve(cache_path=tmpdir, env={**os.environ, "SOME_VAR": "SOME_TEXT"}),
+        vhs.resolve(
+            cache_path=tmpdir, env={**os.environ, "SOME_VAR": "SOME_TEXT"}, auth=auth
+        ),
         f"""
         Type "echo {var_name}"
         Enter
@@ -153,7 +157,9 @@ def test_env(tmpdir, runner):
     var_name_1 = "%SOME_VAR_1%" if sys.platform == "win32" else "$SOME_VAR_1"
     var_name_2 = "%SOME_VAR_2%" if sys.platform == "win32" else "$SOME_VAR_2"
     res = runner(
-        vhs.resolve(cache_path=tmpdir, env={**os.environ, "SOME_VAR_1": "SOME_TEXT"}),
+        vhs.resolve(
+            cache_path=tmpdir, env={**os.environ, "SOME_VAR_1": "SOME_TEXT"}, auth=auth
+        ),
         f"""
         Type "echo {var_name_1}"
         Enter
@@ -171,14 +177,14 @@ def test_env(tmpdir, runner):
 
 
 @pytest.mark.parametrize("runner", [_run, _run_inline])
-def test_cwd(tmpdir, runner):
+def test_cwd(tmpdir, runner, auth):
     pwd = "cd" if sys.platform == "win32" else "pwd"
 
     cwd1 = tmpdir / "cwd1"
     cwd1.mkdir()
 
     res = runner(
-        vhs.resolve(cache_path=tmpdir, cwd=cwd1),
+        vhs.resolve(cache_path=tmpdir, cwd=cwd1, auth=auth),
         f"""
         Type "{pwd}"
         Enter
@@ -193,7 +199,7 @@ def test_cwd(tmpdir, runner):
     cwd2.mkdir()
 
     res = runner(
-        vhs.resolve(cache_path=tmpdir, cwd=cwd1),
+        vhs.resolve(cache_path=tmpdir, cwd=cwd1, auth=auth),
         f"""
         Type "{pwd}"
         Enter
@@ -208,11 +214,12 @@ def test_cwd(tmpdir, runner):
 
 
 @pytest.mark.linux
-def test_progress(tmpdir, capsys):
+def test_progress(tmpdir, capsys, auth):
     vhs.resolve(
         cache_path=tmpdir,
         env={"PATH": os.defpath},
         reporter=vhs.DefaultProgressReporter(),
+        auth=auth,
     )
 
     err: str = capsys.readouterr().err
