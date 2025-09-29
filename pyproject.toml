@@ -17,7 +17,7 @@ classifiers = [
     "Intended Audience :: Developers",
     "Typing :: Typed",
 ]
-dependencies = ["PyGithub~=1.59.0", "requests~=2.31.0"]
+dependencies = ["PyGithub>=1.59,<2.9", "requests~=2.31.0"]
 
 [dependency-groups]
 dev = [
