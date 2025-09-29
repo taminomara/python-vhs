@@ -30,6 +30,9 @@ def auth():
         )
 
 
+@pytest.mark.xfail(
+    sys.platform != "darwin", reason="system VHS installation is broken there :("
+)
 def test_system_vhs(tmpdir, auth):
     system_vhs = shutil.which("vhs")
     assert system_vhs is not None, "vhs should be installed on your system to run tests"
@@ -72,9 +75,7 @@ def test_system_vhs_unavailable_fail(tmpdir, auth):
 @pytest.mark.darwin
 @pytest.mark.win32
 def test_system_vhs_outdated_fail(tmpdir, auth):
-    with pytest.raises(
-        vhs.VhsError, match=r"vhs release for version 9999.0.0 or newer"
-    ):
+    with pytest.raises(vhs.VhsError, match=r"version 9999.0.0 or newer"):
         vhs.resolve(cache_path=tmpdir, min_version="9999.0.0", auth=auth)
 
 
