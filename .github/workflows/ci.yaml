@@ -34,7 +34,7 @@ jobs:
         include:
           - os: windows-latest
             python-version: "3.13"
-            type: tests
+            type: test
           - os: macos-latest
             python-version: "3.13"
             type: test
@@ -54,6 +54,11 @@ jobs:
       - name: Update pip
         run: python -m pip install --upgrade pip
       # Tests
+      - name: Install VHS
+        if: ${{ matrix.type == 'test' }}
+        uses: charmbracelet/vhs-action@v2
+        with:
+          path: ""
       - name: Install test dependencies
         if: ${{ matrix.type == 'test' }}
         run: python -m pip install . --group test
