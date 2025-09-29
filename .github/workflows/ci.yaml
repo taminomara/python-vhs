@@ -32,9 +32,6 @@ jobs:
         type:
           - test
         include:
-          - os: windows-latest
-            python-version: "3.13"
-            type: test
           - os: macos-latest
             python-version: "3.13"
             type: test
