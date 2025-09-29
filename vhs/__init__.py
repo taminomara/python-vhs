@@ -809,9 +809,10 @@ def _check_and_install(
     # Check system compatibility.
     if sys.platform == "darwin":
         if system_vhs_path:
+            version = _make_version_message(min_version, max_version)
             raise VhsError(
                 f"you have VHS {system_version}, "
-                f"but version {version} or newer is required; "
+                f"but {version} is required; "
                 f"run `brew upgrade vhs` to upgrade it, or see installation instructions "
                 f"at https://github.com/charmbracelet/vhs#installation"
             )
@@ -825,9 +826,10 @@ def _check_and_install(
         not install or sys.platform != "linux" or platform.architecture()[0] != "64bit"
     ):
         if system_vhs_path:
+            version = _make_version_message(min_version, max_version)
             raise VhsError(
                 f"you have VHS {system_version}, "
-                f"but version {version} or newer is required; "
+                f"but {version} is required; "
                 f"see upgrade instructions "
                 f"at https://github.com/charmbracelet/vhs#installation"
             )
