@@ -92,7 +92,7 @@ jobs:
         run: |
           ref="${{ github.ref }}";
           version=${ref#refs/tags/v};
-          link="https://pypi.org/p/${{ github.repository }}/${version}";
+          link="https://pypi.org/p/vhs/${version}/";
           echo "version=${version}" >> $GITHUB_OUTPUT
           echo "link=${link}" >> $GITHUB_OUTPUT
       - name: Parse Changelog
