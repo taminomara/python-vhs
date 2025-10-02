@@ -611,7 +611,7 @@ def _download_release(
             try:
                 size = int(stream.headers["content-length"])
             except (KeyError, ValueError):
-                size = -1
+                size = 0
             downloaded = 0
 
             reporter.progress(f"downloading {name}", downloaded, size, 0)
