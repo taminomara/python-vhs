@@ -74,7 +74,6 @@ jobs:
     name: Publish package to PyPi
     needs:
       - test
-      - build_docs
     if: ${{ github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags') }}
     runs-on: ubuntu-latest
     environment:
