@@ -9,7 +9,7 @@ and a simple API to run those.
 
 ## Resources
 
-- [Documentation](https://taminomara.github.io/python-vhs/)
+- [Documentation](https://python-vhs.readthedocs.io/en/stable/)
 - [Issues](https://github.com/taminomara/python-vhs/issues)
 - [Source](https://github.com/taminomara/python-vhs/)
 - [PyPi](https://pypi.org/project/vhs/)
