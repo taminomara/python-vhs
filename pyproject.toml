@@ -27,7 +27,7 @@ dev = [
     { include-group = "doc" },
 ]
 test = ["pyright==1.1.406", "pytest==8.4.2", "sybil==9.2.0", "html5lib~=1.1"]
-lint = ["black==25.9.0", "isort==6.0.1", "pre-commit==4.3.0"]
+lint = ["black==25.9.0", "isort==6.1.0", "pre-commit==4.3.0"]
 doc = [
     "sphinx==8.2.3",
     "sybil==9.2.0",
