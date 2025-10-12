@@ -2,6 +2,8 @@
 
 ## [unreleased]
 
+- Releases are no longer uploaded to test version of PyPi.
+
 ## [1.0.0-post1]
 
 - Moved documentation to Read the Docs and updated all links.
