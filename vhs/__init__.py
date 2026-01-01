@@ -883,7 +883,9 @@ def _check_and_install(
             _logger.debug("using cached vhs")
             return vhs_path, path
 
-    _install_vhs(min_version, max_version, api, timeout, retry, bin_path, reporter, repo)
+    _install_vhs(
+        min_version, max_version, api, timeout, retry, bin_path, reporter, repo
+    )
 
     can_use_cached_vhs, _ = _check_version(min_version, max_version, vhs_path)
     if not can_use_cached_vhs:
