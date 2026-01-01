@@ -29,7 +29,7 @@ dev = [
 test = ["pyright==1.1.407", "pytest==9.0.1", "sybil==9.2.0", "html5lib~=1.1"]
 lint = ["black==25.12.0", "isort==7.0.0", "pre-commit==4.5.0"]
 doc = [
-    "sphinx==8.2.3",
+    "sphinx==9.0.4",
     "sybil==9.2.0",
     "furo==2025.12.19",
     "sphinx_design==0.6.1",
