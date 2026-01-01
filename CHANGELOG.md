@@ -2,6 +2,8 @@
 
 ## [unreleased]
 
+- Added CLI interface: `python -m vhs ...` now resolves and invokes VHS.
+- Added an option to install VHS from custom GitHub repo (to use [SVG fork]).
 - Releases are no longer uploaded to test version of PyPi.
 
 ## [1.0.0-post1]
@@ -28,3 +30,4 @@
 [unreleased]: https://github.com/taminomara/python-vhs/compare/v1.0.0...v1.0.0-post1
 [1.0.0]: https://github.com/taminomara/python-vhs/compare/v1.0.0-beta0...v1.0.0
 [1.0.0-beta0]: https://github.com/taminomara/python-vhs/compare/v0.0.4...v1.0.0-beta0
+[SVG fork]: https://github.com/agentstation/vhs/

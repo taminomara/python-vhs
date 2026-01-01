@@ -370,6 +370,7 @@ def resolve(
     timeout: int = 15,
     retry: _t.Optional[urllib3.Retry] = None,
     auth: github.Auth.Auth | None = None,
+    repo: str = "charmbracelet/vhs",
 ) -> "Vhs":
     """
     Find a system VHS installation or download VHS from GitHub.
@@ -408,6 +409,11 @@ def resolve(
     :param auth:
         authentication method for downloading releases from GitHub.
         If set to `None`, requests to GitHub's API will be rate limited.
+    :param repo:
+        where to download VHS from. Default is the official installation. You may use
+        this option to switch to a fork with support for `SVG output`__.
+
+        __ https://github.com/agentstation/vhs/
     :return:
         resolved VHS installation.
     :raises VhsError:
@@ -438,6 +444,7 @@ def resolve(
             timeout,
             retry,
             auth,
+            repo,
         )
     finally:
         reporter.finish(*sys.exc_info())
@@ -642,8 +649,9 @@ def _install_vhs(
     retry: urllib3.Retry,
     bin_path: pathlib.Path,
     reporter: ProgressReporter,
+    repo: str,
 ):
-    filter = lambda name: name.endswith("Linux_x86_64.tar.gz")
+    filter = lambda name: name.lower().endswith("linux_x86_64.tar.gz")
 
     with tempfile.TemporaryDirectory() as tmp_dir_s:
         tmp_dir = pathlib.Path(tmp_dir_s)
@@ -656,7 +664,7 @@ def _install_vhs(
                 timeout,
                 retry,
                 "vhs",
-                "charmbracelet/vhs",
+                repo,
                 tmp_dir,
                 filter,
                 reporter,
@@ -668,6 +676,8 @@ def _install_vhs(
 
             shutil.unpack_archive(tmp_file, tmp_dir)
 
+            os.system(f"tree {tmp_dir}")
+
             archive_basename = tmp_file.name
             if archive_basename.endswith(".zip"):
                 archive_basename = archive_basename[: -len(".zip")]
@@ -676,7 +686,10 @@ def _install_vhs(
             elif archive_basename.endswith(".tar.xz"):
                 archive_basename = archive_basename[: -len(".tar.xz")]
 
-            src = tmp_dir / archive_basename / "vhs"
+            if (tmp_dir / archive_basename / "vhs").exists():
+                src = tmp_dir / archive_basename / "vhs"
+            else:
+                src = tmp_dir / "vhs"
             dst = bin_path / "vhs"
 
             _logger.debug("copying %s -> %s", src, dst)
@@ -787,6 +800,7 @@ def _check_and_install(
     timeout: int,
     retry: urllib3.Retry,
     auth: github.Auth.Auth | None,
+    repo: str,
 ) -> _t.Tuple[pathlib.Path, str]:
     if min_version.startswith("v"):
         min_version = min_version[1:]
@@ -869,7 +883,7 @@ def _check_and_install(
             _logger.debug("using cached vhs")
             return vhs_path, path
 
-    _install_vhs(min_version, max_version, api, timeout, retry, bin_path, reporter)
+    _install_vhs(min_version, max_version, api, timeout, retry, bin_path, reporter, repo)
 
     can_use_cached_vhs, _ = _check_version(min_version, max_version, vhs_path)
     if not can_use_cached_vhs:
