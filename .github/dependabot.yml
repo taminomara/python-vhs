@@ -19,6 +19,7 @@ updates:
         - "pytest-regressions"
         - "beautifulsoup4"
         - "sphinxcontrib-svg2pdfconverter"
+        - "sphinx-autobuild"
       style:
         patterns:
         - "black"
