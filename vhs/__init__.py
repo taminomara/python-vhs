@@ -32,6 +32,12 @@ Then resolve VHS binary and run it:
     vhs_runner = vhs.resolve()
     vhs_runner.run("./example.tape", "./example.gif")
 
+Or run VHS from command line:
+
+.. code-block:: console
+
+    $ python -m vhs --help
+
 
 Reference
 ---------
