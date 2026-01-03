@@ -682,8 +682,6 @@ def _install_vhs(
 
             shutil.unpack_archive(tmp_file, tmp_dir)
 
-            os.system(f"tree {tmp_dir}")
-
             archive_basename = tmp_file.name
             if archive_basename.endswith(".zip"):
                 archive_basename = archive_basename[: -len(".zip")]
