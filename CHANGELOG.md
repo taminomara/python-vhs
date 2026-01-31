@@ -2,7 +2,7 @@
 
 ## [unreleased]
 
-## ## [1.1.1]
+## [1.1.1]
 
 - Removed forgotten debug print.
 
