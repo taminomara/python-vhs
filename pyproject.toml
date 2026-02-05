@@ -32,7 +32,7 @@ doc = [
     "sphinx==8.2.3",
     "sybil==9.3.0",
     "furo==2025.12.19",
-    "sphinx_design==0.6.1",
+    "sphinx_design==0.7.0",
     "sphinx-autobuild==2025.8.25",
 ]
 
