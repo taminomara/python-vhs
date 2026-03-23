@@ -21,7 +21,7 @@ dependencies = ["PyGithub>=1.59,<2.9", "requests>=2.31,<2.33"]
 
 [dependency-groups]
 dev = [
-    "pytest-cov==7.0.0",
+    "pytest-cov==7.1.0",
     { include-group = "test" },
     { include-group = "lint" },
     { include-group = "doc" },
