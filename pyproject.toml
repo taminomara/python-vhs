@@ -21,16 +21,16 @@ dependencies = ["PyGithub>=1.59,<2.9", "requests>=2.31,<2.33"]
 
 [dependency-groups]
 dev = [
-    "pytest-cov==7.0.0",
+    "pytest-cov==7.1.0",
     { include-group = "test" },
     { include-group = "lint" },
     { include-group = "doc" },
 ]
-test = ["pyright==1.1.408", "pytest==9.0.2", "sybil==9.3.0", "html5lib~=1.1"]
+test = ["pyright==1.1.408", "pytest==9.0.2", "sybil==10.0.1", "html5lib~=1.1"]
 lint = ["black==26.1.0", "isort==8.0.1", "pre-commit==4.5.1"]
 doc = [
     "sphinx==8.2.3",
-    "sybil==9.3.0",
+    "sybil==10.0.1",
     "furo==2025.12.19",
     "sphinx_design==0.7.0",
     "sphinx-autobuild==2025.8.25",
