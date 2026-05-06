@@ -28,6 +28,7 @@ def auth():
             os.environ["VHS_TEST_GH_LOGIN"].strip(),
             os.environ["VHS_TEST_GH_PASS"].strip(),
         )
+    return None
 
 
 @pytest.mark.xfail(

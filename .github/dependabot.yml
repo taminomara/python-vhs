@@ -7,21 +7,35 @@ updates:
     groups:
       dev:
         patterns:
-        - "furo"
-        - "pyright"
-        - "pytest-cov"
-        - "pytest-image-diff"
-        - "pytest"
-        - "reportlab"
-        - "sphinx_design"
-        - "svglib"
-        - "sybil"
-        - "pytest-regressions"
-        - "beautifulsoup4"
-        - "sphinxcontrib-svg2pdfconverter"
-        - "sphinx-autobuild"
+          - "furo"
+          - "html5lib"
+          - "PyGithub"
+          - "pyright"
+          - "pytest-cov"
+          - "pytest"
+          - "requests"
+          - "sphinx_design"
+          - "sphinx-autobuild"
+          - "sphinx"
+          - "sybil"
+          - "tox"
       style:
         patterns:
-        - "black"
-        - "isort"
-        - "pre-commit"
+          - "prek"
+          - "ruff"
+  - package-ecosystem: "pre-commit"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      pre-commit:
+        patterns:
+          - "*"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      gh-actions:
+        patterns:
+          - "*"

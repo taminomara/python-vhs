@@ -75,6 +75,8 @@ most basic cases:
 
 """
 
+from __future__ import annotations
+
 import datetime
 import logging
 import math
@@ -98,14 +100,14 @@ import urllib3
 
 _logger = logging.getLogger("vhs")
 
-from vhs._version import *
+from vhs._version import *  # noqa: F403
 
 __all__ = [
+    "DefaultProgressReporter",
+    "ProgressReporter",
+    "Vhs",
     "VhsError",
     "VhsRunError",
-    "Vhs",
-    "ProgressReporter",
-    "DefaultProgressReporter",
     "resolve",
 ]
 
@@ -345,7 +347,7 @@ class DefaultProgressReporter(ProgressReporter):
             self.progress(f"vhs installation failed: {exc_val}", 0, 0, 0)
             self.write("\n")
         elif self._prev_len > 0:
-            self.progress(f"vhs installed", 0, 0, 0)
+            self.progress("vhs installed", 0, 0, 0)
             self.write("\n")
 
     def format_desc(self, desc: str) -> str:
@@ -676,7 +678,7 @@ def _install_vhs(
                 reporter,
             )
 
-            reporter.progress(f"processing vhs", 0, 0, 0)
+            reporter.progress("processing vhs", 0, 0, 0)
 
             _logger.debug("unpacking vhs")
 
@@ -730,7 +732,7 @@ def _install_ttyd(
                 reporter,
             )
 
-            reporter.progress(f"processing ttyd", 0, 0, 0)
+            reporter.progress("processing ttyd", 0, 0, 0)
 
             dst = bin_path / "ttyd"
 
@@ -768,7 +770,7 @@ def _install_ffmpeg(
                 reporter,
             )
 
-            reporter.progress(f"processing ffmpeg", 0, 0, 0)
+            reporter.progress("processing ffmpeg", 0, 0, 0)
 
             archive_basename = tmp_file.name
             if archive_basename.endswith(".zip"):
@@ -836,9 +838,9 @@ def _check_and_install(
             )
         else:
             raise VhsError(
-                f"VHS is not installed on your system; "
-                f"run `brew install vhs` to install it, or see installation instructions "
-                f"at https://github.com/charmbracelet/vhs#installation"
+                "VHS is not installed on your system; "
+                "run `brew install vhs` to install it, or see installation instructions "
+                "at https://github.com/charmbracelet/vhs#installation"
             )
     elif (
         not install or sys.platform != "linux" or platform.architecture()[0] != "64bit"
@@ -853,9 +855,9 @@ def _check_and_install(
             )
         else:
             raise VhsError(
-                f"VHS is not installed on your system; "
-                f"see installation instructions "
-                f"at https://github.com/charmbracelet/vhs#installation"
+                "VHS is not installed on your system; "
+                "see installation instructions "
+                "at https://github.com/charmbracelet/vhs#installation"
             )
 
     # Download binary releases or use cached ones.

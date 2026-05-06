@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import subprocess
 import sys
@@ -11,7 +13,7 @@ def _main():
         ["vhs"] + sys.argv[1:],
         env={
             **os.environ,
-            "PATH": runner._path,  # type: ignore
+            "PATH": runner._path,
         },
     )
     sys.exit(res.returncode)
