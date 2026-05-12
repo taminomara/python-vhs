@@ -19,6 +19,7 @@ updates:
           - "sphinx"
           - "sybil"
           - "tox"
+          - "tox-uv"
       style:
         patterns:
           - "prek"
