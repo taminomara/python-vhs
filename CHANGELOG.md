@@ -2,9 +2,10 @@
 
 ## [Unreleased]
 
-## [1.1.2]
+## [1.1.2] - 2026-05-12
 
 - Bumped dependencies.
+- Hardened build and publishing process to lower risk of supply-chain attacks.
 
 ## [1.1.1] - 2026-02-01
 
