@@ -1,0 +1,9 @@
+[pytest]
+minversion = "9.0"
+addopts = ["--strict-markers", "-p no:doctest"]
+testpaths = ["test", "vhs", "docs"]
+markers = [
+    "linux: test runs only on linux runners",
+    "darwin: test runs only on darwin runners",
+    "win32: test runs only on win32 runners",
+]

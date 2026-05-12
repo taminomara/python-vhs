@@ -2,7 +2,7 @@ import sys
 
 import pytest
 
-ALL = set("darwin linux win32".split())
+ALL = set(["darwin", "linux", "win32"])
 
 
 def pytest_runtest_setup(item):
