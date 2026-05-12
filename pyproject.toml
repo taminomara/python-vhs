@@ -17,7 +17,7 @@ classifiers = [
     "Intended Audience :: Developers",
     "Typing :: Typed",
 ]
-dependencies = ["PyGithub>=1.59,<2.10", "requests>=2.31,<2.34"]
+dependencies = ["PyGithub>=1.59,<2.10", "requests>=2.31,<2.35"]
 
 [dependency-groups]
 dev = [
@@ -28,25 +28,25 @@ dev = [
 ]
 test = [
     "html5lib~=1.1",
-    "pyright==1.1.408",
-    "pytest-cov==7.0.0",
-    "pytest==9.0.2",
-    "sybil==9.3.0",
+    "pyright==1.1.409",
+    "pytest-cov==7.1.0",
+    "pytest==9.0.3",
+    "sybil==10.0.1",
 ]
 doc = [
     "furo==2025.12.19",
     "sphinx==9.1.0",
     "sphinx-autobuild==2025.8.25",
     "sphinx_design==0.7.0",
-    "sybil==9.3.0",
+    "sybil==10.0.1",
 ]
 lint = [
     "prek==0.3.8",
     "ruff==0.15.9",
 ]
 ci = [
-    "pytest-cov==7.0.0",
-    "tox==4.34.1",
+    "pytest-cov==7.1.0",
+    "tox==4.53.1",
     "tox-uv==1.29.0",
 ]
 
