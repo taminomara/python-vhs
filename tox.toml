@@ -42,7 +42,18 @@ base_python = ["3.14"]
 description = "Run pre-commit hooks"
 dependency_groups = ["lint"]
 skip_install = true
-commands = [["prek", "run", "--all-files", "--color=always"]]
+commands = [
+    [
+        "uv",
+        "run",
+        "--active",
+        "--no-sync",
+        "prek",
+        "run",
+        "--all-files",
+        "--color=always",
+    ],
+]
 depends = []
 
 [env.coverage-clean]
