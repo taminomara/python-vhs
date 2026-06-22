@@ -30,7 +30,7 @@ test = [
     "html5lib~=1.1",
     "pyright==1.1.410",
     "pytest-cov==7.1.0",
-    "pytest==9.1.0",
+    "pytest==9.1.1",
     "sybil==10.1.0",
 ]
 doc = [
